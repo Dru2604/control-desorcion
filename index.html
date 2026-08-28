@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Control de Desorción</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #f0f2f5; color: #1c1e21; display: flex; min-height: 100vh; }
+        
+        /* PANTALLA PRELIMINAR (LOGIN) */
+        #loginSection { position: fixed; top:0; left:0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #1a202c; z-index: 999; }
+        .login-box { background: white; padding: 35px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; }
+        .logo-login { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e0; }
+
+        /* BARRA LATERAL IZQUIERDA (SIDEBAR) */
+        .sidebar { width: 250px; background: #1a202c; color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 20px 10px; position: fixed; height: 100vh; }
+        .sidebar-top { text-align: center; }
+        .logo-sidebar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #4a5568; }
+        .menu-items { margin-top: 30px; display: flex; flex-direction: column; gap: 8px; }
+        .nav-btn { background: transparent; color: #a0aec0; border: none; padding: 12px 15px; width: 100%; text-align: left; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
+        .nav-btn:hover, .nav-btn.active { background: #2d3748; color: white; }
+        .sidebar-bottom { border-top: 1px solid #2d3748; padding-top: 15px; }
+
+        /* CONTENIDO PRINCIPAL */
+        .main-content { margin-left: 250px; flex: 1; padding: 30px; max-width: calc(100vw - 250px); }
+        .card { background: white; padding: 22px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .seccion-app { display: none; }
+        .seccion-app.active { display: block; }
+
+        /* FORMULARIOS Y BOTONES */
+        .campo { margin-bottom: 12px; text-align: left; }
+        label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #4a5568; }
+        input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
+        button { background: #3182ce; color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px; }
+        button:hover { background: #2b6cb0; }
+        .btn-secundario { background: #718096; font-size: 12px; }
+        .btn-peligro { background: #e53e3e; }
+        
+        /* TABLA DE CARGAS Y LOTES */
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
+        th, td { padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+        th { background: #2d3748; color: white; }
+        .fila-carga { background: #f7fafc; font-weight: bold; }
+        .detalles-lotes { background: #edf2f7; display: none; }
+        .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
+    </style>
+</head>
+<body>
+
+<!-- PANTALLA PRELIMINAR (LOGIN CON LOGO) -->
+<div id="loginSection">
+    <div class="login-box">
+        <img src="logo.jpeg" alt="Logo" class="logo-login">
+        <h3 style="margin-bottom: 5px; color: #2d3748;">Ingreso al Sistema</h3>
+        <p style="font-size: 12px; color: #a0aec0; margin-bottom: 20px;">Control de Carbón y Desorción</p>
+        
+        <form id="formLogin">
+            <div class="campo">
+                <label>Usuario:</label>
+                <input type="text" id="userLogin" required placeholder="Ej: admin">
+            </div>
+            <div class="campo">
+                <label>Contraseña:</label>
+                <input type="password" id="passLogin" required placeholder="••••••••">
+            </div>
+            <button type="submit" style="width: 100%; margin-top: 10px;">Ingresar</button>
+        </form>
+        <p id="loginError" style="color: #e53e3e; font-size: 12px; margin-top: 10px; display: none;"></p>
+    </div>
+</div>
+
+<!-- BARRA LATERAL IZQUIERDA (SIDEBAR) -->
+<div id="sidebarApp" class="sidebar" style="display: none;">
+    <div class="sidebar-top">
+        <img src="logo.jpeg" alt="Logo" class="logo-sidebar">
+        <h4 style="font-size: 14px;">CONTROL DE ACOPIO</h4>
+        <div class="menu-items">
+            <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)">📝 Registrar Carga</button>
+            <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)">🔍 Buscar y Filtrar</button>
+            <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)">📋 Historial General</button>
+        </div>
+    </div>
+    <div class="sidebar-bottom">
+        <p style="font-size: 12px; color: #a0aec0; margin-bottom: 5px;">Usuario Activo:</p>
+        <b id="lblNombreUsuario" style="font-size: 13px;"></b><br>
+        <span id="lblRolUsuario" class="badge" style="margin-top: 4px; display: inline-block;"></span>
+        <button onclick="cerrarSesion()" class="btn-peligro" style="width: 100%; margin-top: 15px; padding: 6px; font-size: 12px;">Cerrar Sesión</button>
+    </div>
+</div>
+
+<!-- CONTENIDO PRINCIPAL A LA DERECHA -->
+<div id="mainApp" class="main-content" style="display: none;">
+
+    <!-- SECCIÓN 1: REGISTRAR CARGA -->
+    <div id="secNuevo" class="seccion-app active">
+        <div class="card">
+            <h3>📦 Registrar Nueva Carga y Lotes</h3>
+            <form id="formCarga">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                    <div class="campo"><label>Código de Operación:</label><input type="text" id="codigo_carga" required placeholder="Ej: OPS-2026-XXX-XXX"></div>
+                    <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="proveedor" required placeholder="Ej: Minera El Sur"></div>
+                </div>
+
+                <div id="contenedorLotes" style="background: #f7fafc; padding: 15px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
+                    <h4>Lotes Pertenecientes a esta Carga</h4>
+                    <div class="lote-item card" style="margin-top: 10px;">
+                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                            <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required placeholder="LOTE-01"></div>
+                            <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" required></div>
+                            <div><label>Tara (kg):</label><input type="number" step="0.01" class="l-tara" required></div>
+                            <div><label>Humedad (%):</label><input type="number" step="0.01" class="l-humedad" required></div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; background: #edf2f7; padding: 10px; border-radius: 6px;">
+                            <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                <div style="flex: 1;">
+                                    <label>¿Cuántas muestras son para este lote?:</label>
+                                    <input type="number" class="l-cant-muestras" min="1" placeholder="Ej: 3">
+                                </div>
+                                <button type="button" class="btn-secundario" onclick="generarCamposMuestras(this)">Generar Campos de Muestras</button>
+                            </div>
+                            <div class="contenedor-campos-muestras" style="margin-top: 10px;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" onclick="agregarCampoLote()" class="btn-secundario" style="margin-bottom: 15px;">+ Agregar Otro Lote</button>
+                <br>
+                <button type="submit">Guardar Carga Completa</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 2: BUSCAR Y FILTRAR -->
+    <div id="secBuscar" class="seccion-app">
+        <div class="card">
+            <h3>🔍 Motor de Búsqueda y Filtros</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 15px;">
+                <div>
+                    <label>Buscar por Proveedor / Carga / Lote:</label>
+                    <input type="text" id="srcTexto" oninput="filtrarTabla()" placeholder="Escribe texto...">
+                </div>
+                <div>
+                    <label>Filtrar por Fecha:</label>
+                    <input type="date" id="srcFecha" onchange="filtrarTabla()">
+                </div>
+                <div>
+                    <label>Estado de Liquidación:</label>
+                    <select id="srcEstado" onchange="filtrarTabla()">
+                        <option value="">-- Todos --</option>
+                        <option value="Por Liquidar">Por Liquidar</option>
+                        <option value="Liquidado">Liquidado</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 3: HISTORIAL GENERAL -->
+    <div id="secHistorial" class="seccion-app active">
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>📋 Historial de Cargas y Lotes</h3>
+                <button id="btnVaciar" onclick="borrarHistorial()" class="btn-peligro" style="display: none;">Vaciar Historial</button>
+            </div>
+
+            <table id="tablaCargas">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Carga Master</th>
+                        <th>Proveedor</th>
+                        <th>N° Lotes</th>
+                        <th>Peso Seco Total</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dinámico -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let usuarioSesion = null;
+    let cargasGlobales = [];
+
+    // LOGIN
+    document.getElementById('formLogin').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const usuario = document.getElementById('userLogin').value;
+        const password = document.getElementById('passLogin').value;
+        const err = document.getElementById('loginError');
+
+        try {
+            const res = await fetch('http://localhost:3001/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ usuario, password })
+            });
+
+            const r = await res.json();
+            if (r.success) {
+                usuarioSesion = r.usuario;
+                sessionStorage.setItem('sesionDesorcion', JSON.stringify(usuarioSesion));
+                iniciarApp();
+            } else {
+                err.style.display = 'block';
+                err.innerText = r.error;
+            }
+        } catch (error) {
+            err.style.display = 'block';
+            err.innerText = 'Error de conexión con el servidor.';
+        }
+    });
+
+    function iniciarApp() {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('sidebarApp').style.display = 'flex';
+        document.getElementById('mainApp').style.display = 'block';
+        
+        document.getElementById('lblNombreUsuario').innerText = usuarioSesion.nombre;
+        document.getElementById('lblRolUsuario').innerText = usuarioSesion.rol;
+
+        if (usuarioSesion.rol === 'ADMIN') {
+            document.getElementById('btnVaciar').style.display = 'block';
+        }
+        cargarCargas();
+    }
+
+    function cerrarSesion() {
+        sessionStorage.removeItem('sesionDesorcion');
+        location.reload();
+    }
+
+    function mostrarSeccion(id, btn) {
+        document.querySelectorAll('.seccion-app').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(id).classList.add('active');
+        if (id === 'secBuscar' || id === 'secHistorial') {
+            document.getElementById('secHistorial').classList.add('active'); // Mantiene la tabla visible
+        }
+        btn.classList.add('active');
+    }
+
+    function generarCamposMuestras(btn) {
+        const parent = btn.closest('.lote-item');
+        const cantidad = parseInt(parent.querySelector('.l-cant-muestras').value);
+        const cont = parent.querySelector('.contenedor-campos-muestras');
+
+        if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida.');
+
+        cont.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 5px;"></div>';
+        const grid = cont.querySelector('div');
+
+        for (let i = 1; i <= cantidad; i++) {
+            grid.innerHTML += `
+                <div>
+                    <label style="font-size: 11px;">Muestra #${i} (kg):</label>
+                    <input type="number" step="0.001" class="peso-muestra-val" required placeholder="0.450">
+                </div>
+            `;
+        }
+    }
+
+    function agregarCampoLote() {
+        const cont = document.getElementById('contenedorLotes');
+        const div = document.createElement('div');
+        div.className = 'lote-item card';
+        div.style.marginTop = '10px';
+        div.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required placeholder="LOTE-02"></div>
+                <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" required></div>
+                <div><label>Tara (kg):</label><input type="number" step="0.01" class="l-tara" required></div>
+                <div><label>Humedad (%):</label><input type="number" step="0.01" class="l-humedad" required></div>
+            </div>
+            <div style="margin-top: 15px; background: #edf2f7; padding: 10px; border-radius: 6px;">
+                <div style="display: flex; gap: 10px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label>¿Cuántas muestras son para este lote?:</label>
+                        <input type="number" class="l-cant-muestras" min="1" placeholder="Ej: 3">
+                    </div>
+                    <button type="button" class="btn-secundario" onclick="generarCamposMuestras(this)">Generar Muestras</button>
+                </div>
+                <div class="contenedor-campos-muestras" style="margin-top: 10px;"></div>
+            </div>
+        `;
+        cont.appendChild(div);
+    }
+
+    document.getElementById('formCarga').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const codigo_carga = document.getElementById('codigo_carga').value;
+        const proveedor = document.getElementById('proveedor').value;
+
+        const lotesElems = document.querySelectorAll('.lote-item');
+        const lotes = [];
+
+        for (let el of lotesElems) {
+            const inputsMuestras = el.querySelectorAll('.peso-muestra-val');
+            if (inputsMuestras.length === 0) return alert('Genera y llena los pesos de muestras.');
+
+            lotes.push({
+                codigo_lote: el.querySelector('.l-codigo').value,
+                peso_bruto: parseFloat(el.querySelector('.l-bruto').value),
+                tara: parseFloat(el.querySelector('.l-tara').value),
+                porcentaje_humedad: parseFloat(el.querySelector('.l-humedad').value),
+                pesos_muestras: Array.from(inputsMuestras).map(i => parseFloat(i.value) || 0)
+            });
+        }
+
+        const res = await fetch('http://localhost:3001/api/cargas', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, lotes })
+        });
+
+        const r = await res.json();
+        if (r.success) {
+            alert('Carga guardada.');
+            document.getElementById('formCarga').reset();
+            cargarCargas();
+        }
+    });
+
+    async function cargarCargas() {
+        const res = await fetch('http://localhost:3001/api/cargas');
+        const r = await res.json();
+        if (r.success) {
+            cargasGlobales = r.data;
+            renderTabla(cargasGlobales);
+        }
+    }
+
+    function renderTabla(lista) {
+        const tbody = document.querySelector('#tablaCargas tbody');
+        tbody.innerHTML = '';
+
+        lista.forEach(c => {
+            const fecha = new Date(c.fecha).toLocaleString();
+            const totalSeco = c.lotes.reduce((sum, l) => sum + parseFloat(l.peso_seco_neto), 0).toFixed(2);
+            const canEditar = (usuarioSesion.rol === 'ADMIN' || usuarioSesion.rol === 'SUPERVISOR');
+
+            let optionsEstado = `
+                <select ${!canEditar ? 'disabled' : ''} onchange="cambiarEstado(${c.id}, this.value)">
+                    <option value="Por Liquidar" ${c.estado === 'Por Liquidar' ? 'selected' : ''}>Por Liquidar</option>
+                    <option value="Liquidado" ${c.estado === 'Liquidado' ? 'selected' : ''}>Liquidado</option>
+                </select>
+            `;
+
+            tbody.innerHTML += `
+                <tr class="fila-carga">
+                    <td>${fecha}</td>
+                    <td><b>${c.codigo_carga}</b></td>
+                    <td>${c.proveedor}</td>
+                    <td>${c.lotes.length}</td>
+                    <td><b>${totalSeco} kg</b></td>
+                    <td>${optionsEstado}</td>
+                    <td><button onclick="toggleLotes('lotes-${c.id}')" class="btn-secundario">▼ Lotes</button></td>
+                </tr>
+                <tr id="lotes-${c.id}" class="detalles-lotes">
+                    <td colspan="7">
+                        <table style="background: white;">
+                            <thead>
+                                <tr>
+                                    <th>Cod. Lote</th>
+                                    <th>Bruto</th>
+                                    <th>Tara</th>
+                                    <th>Muestras Total</th>
+                                    <th>Humedad %</th>
+                                    <th>Seco Neto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${c.lotes.map(l => `
+                                    <tr>
+                                        <td>${l.codigo_lote}</td>
+                                        <td>${l.peso_bruto} kg</td>
+                                        <td>${l.tara} kg</td>
+                                        <td>${l.peso_muestras_total} kg</td>
+                                        <td>${l.porcentaje_humedad}%</td>
+                                        <td><b>${l.peso_seco_neto} kg</b></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function toggleLotes(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === 'table-row' ? 'none' : 'table-row';
+    }
+
+    async function cambiarEstado(id, nuevoEstado) {
+        const res = await fetch(`http://localhost:3001/api/cargas/${id}/estado`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ estado: nuevoEstado, rol_usuario: usuarioSesion.rol })
+        });
+        const r = await res.json();
+        if (!r.success) alert(r.error);
+        else cargarCargas();
+    }
+
+    function filtrarTabla() {
+        const texto = document.getElementById('srcTexto').value.toLowerCase();
+        const fecha = document.getElementById('srcFecha').value;
+        const estado = document.getElementById('srcEstado').value;
+
+        const filtrados = cargasGlobales.filter(c => {
+            const matchTexto = c.proveedor.toLowerCase().includes(texto) || 
+                               c.codigo_carga.toLowerCase().includes(texto) ||
+                               c.lotes.some(l => l.codigo_lote.toLowerCase().includes(texto));
+            
+            const matchFecha = !fecha || c.fecha.startsWith(fecha);
+            const matchEstado = !estado || c.estado === estado;
+
+            return matchTexto && matchFecha && matchEstado;
+        });
+
+        renderTabla(filtrados);
+    }
+
+    async function borrarHistorial() {
+        if (!confirm('¿Borrar todo el historial?')) return;
+        const res = await fetch('http://localhost:3001/api/cargas', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rol_usuario: usuarioSesion.rol })
+        });
+        const r = await res.json();
+        if (r.success) cargarCargas();
+        else alert(r.error);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const s = sessionStorage.getItem('sesionDesorcion');
+        if (s) {
+            usuarioSesion = JSON.parse(s);
+            iniciarApp();
+        }
+    });
+</script>
+
+</body>
+</html>
