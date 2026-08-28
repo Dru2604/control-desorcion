@@ -43,6 +43,12 @@
         .fila-carga { background: #f7fafc; font-weight: bold; }
         .detalles-lotes { background: #edf2f7; display: none; }
         .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
+
+        /* MÓDULO DE GERENCIA / CONTROL MAESTRO */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .kpi-card { background: #2b6cb0; color: white; padding: 18px; border-radius: 8px; text-align: center; }
+        .kpi-card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
+        .kpi-card p { font-size: 22px; font-weight: bold; margin-top: 6px; }
     </style>
 </head>
 <body>
@@ -78,6 +84,8 @@
             <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)">📝 Registrar Carga</button>
             <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)">🔍 Buscar y Filtrar</button>
             <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)">📋 Historial General</button>
+            <!-- BOTÓN EXCLUSIVO DE GERENCIA -->
+            <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none; background: #2b6cb0; color: white;">📊 Control Maestro</button>
         </div>
     </div>
     <div class="sidebar-bottom">
@@ -157,7 +165,7 @@
     </div>
 
     <!-- SECCIÓN 3: HISTORIAL GENERAL -->
-    <div id="secHistorial" class="seccion-app active">
+    <div id="secHistorial" class="seccion-app">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>📋 Historial de Cargas y Lotes</h3>
@@ -178,6 +186,53 @@
                 </thead>
                 <tbody>
                     <!-- Dinámico -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 4: CONTROL MAESTRO DE GERENCIA -->
+    <div id="secGerencia" class="seccion-app">
+        <div class="card">
+            <h3>📊 Control Maestro de Carbón y Valorización Financiera</h3>
+            <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Vista consolidada exclusiva para Gerencia General.</p>
+            
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h4>Kg Seco Stock Físico</h4>
+                    <p id="kpiKgSeco">0.00 kg</p>
+                </div>
+                <div class="kpi-card">
+                    <h4>Onzas Au Disponibles</h4>
+                    <p id="kpiOzAu">0.00 Oz</p>
+                </div>
+                <div class="kpi-card">
+                    <h4>Valor Au (USD)</h4>
+                    <p id="kpiValorAu">$0.00</p>
+                </div>
+                <div class="kpi-card" style="background: #2d3748;">
+                    <h4>Valor Total Disponible</h4>
+                    <p id="kpiValorTotal">$0.00</p>
+                </div>
+            </div>
+
+            <table id="tablaGerencia">
+                <thead>
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Lote</th>
+                        <th>P. Bruto (kg)</th>
+                        <th>P. Seco (kg)</th>
+                        <th>Au (Oz)</th>
+                        <th>Valor Au (USD)</th>
+                        <th>Ag (Oz)</th>
+                        <th>Valor Ag (USD)</th>
+                        <th>Valor Total (USD)</th>
+                        <th>Estatus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dinámico Gerencia -->
                 </tbody>
             </table>
         </div>
@@ -230,6 +285,12 @@
         if (usuarioSesion.rol === 'ADMIN') {
             document.getElementById('btnVaciar').style.display = 'block';
         }
+
+        // MOSTRAR OPCIÓN DE GERENCIA SI TIENE ROL GERENCIA
+        if (usuarioSesion.rol === 'GERENCIA') {
+            document.getElementById('btnMenuGerencia').style.display = 'flex';
+        }
+
         cargarCargas();
     }
 
@@ -246,7 +307,12 @@
         if (id === 'secBuscar' || id === 'secHistorial') {
             document.getElementById('secHistorial').classList.add('active');
         }
-        btn.classList.add('active');
+        
+        if (id === 'secGerencia') {
+            cargarControlMaestroGerencia();
+        }
+
+        if (btn) btn.classList.add('active');
     }
 
     function generarCamposMuestras(btn) {
@@ -346,7 +412,7 @@
         lista.forEach(c => {
             const fecha = new Date(c.fecha).toLocaleString();
             const totalSeco = c.lotes.reduce((sum, l) => sum + parseFloat(l.peso_seco_neto), 0).toFixed(2);
-            const canEditar = (usuarioSesion.rol === 'ADMIN' || usuarioSesion.rol === 'SUPERVISOR');
+            const canEditar = (usuarioSesion.rol === 'ADMIN' || usuarioSesion.rol === 'SUPERVISOR' || usuarioSesion.rol === 'GERENCIA');
 
             let optionsEstado = `
                 <select ${!canEditar ? 'disabled' : ''} onchange="cambiarEstado(${c.id}, this.value)">
@@ -395,6 +461,52 @@
                 </tr>
             `;
         });
+    }
+
+    // CARGAR DATOS EXCLUSIVOS DE GERENCIA
+    async function cargarControlMaestroGerencia() {
+        try {
+            const res = await fetch(`${API_URL}/api/gerencia/control-maestro`, {
+                headers: { 'x-rol-usuario': usuarioSesion.rol }
+            });
+            const r = await res.json();
+            if (r.success) {
+                let totalKgSeco = 0, totalOzAu = 0, totalValorAu = 0, totalValorGral = 0;
+                const tbody = document.querySelector('#tablaGerencia tbody');
+                tbody.innerHTML = '';
+
+                r.data.forEach(row => {
+                    totalKgSeco += parseFloat(row.peso_seco_neto || 0);
+                    totalOzAu += parseFloat(row.au_oz || 0);
+                    totalValorAu += parseFloat(row.valor_au_usd || 0);
+                    totalValorGral += parseFloat(row.valor_total_usd || 0);
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b>${row.proveedor}</b></td>
+                            <td>${row.codigo_lote}</td>
+                            <td>${parseFloat(row.peso_bruto).toFixed(2)} kg</td>
+                            <td>${parseFloat(row.peso_seco_neto).toFixed(2)} kg</td>
+                            <td>${parseFloat(row.au_oz || 0).toFixed(2)}</td>
+                            <td>$${parseFloat(row.valor_au_usd || 0).toFixed(2)}</td>
+                            <td>${parseFloat(row.ag_oz || 0).toFixed(2)}</td>
+                            <td>$${parseFloat(row.valor_ag_usd || 0).toFixed(2)}</td>
+                            <td><b>$${parseFloat(row.valor_total_usd || 0).toFixed(2)}</b></td>
+                            <td><span class="badge">${row.estatus}</span></td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('kpiKgSeco').innerText = `${totalKgSeco.toFixed(2)} kg`;
+                document.getElementById('kpiOzAu').innerText = `${totalOzAu.toFixed(2)} Oz`;
+                document.getElementById('kpiValorAu').innerText = `$${totalValorAu.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                document.getElementById('kpiValorTotal').innerText = `$${totalValorGral.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            } else {
+                alert(r.error);
+            }
+        } catch (err) {
+            console.error('Error al cargar reporte maestro:', err);
+        }
     }
 
     function toggleLotes(id) {
