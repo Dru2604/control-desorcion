@@ -186,6 +186,7 @@
 </div>
 
 <script>
+    const API_URL = 'https://backend-desorcion.onrender.com';
     let usuarioSesion = null;
     let cargasGlobales = [];
 
@@ -197,7 +198,7 @@
         const err = document.getElementById('loginError');
 
         try {
-            const res = await fetch('http://localhost:3001/api/login', {
+            const res = await fetch(`${API_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ usuario, password })
@@ -243,7 +244,7 @@
         
         document.getElementById(id).classList.add('active');
         if (id === 'secBuscar' || id === 'secHistorial') {
-            document.getElementById('secHistorial').classList.add('active'); // Mantiene la tabla visible
+            document.getElementById('secHistorial').classList.add('active');
         }
         btn.classList.add('active');
     }
@@ -315,7 +316,7 @@
             });
         }
 
-        const res = await fetch('http://localhost:3001/api/cargas', {
+        const res = await fetch(`${API_URL}/api/cargas`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, lotes })
@@ -330,7 +331,7 @@
     });
 
     async function cargarCargas() {
-        const res = await fetch('http://localhost:3001/api/cargas');
+        const res = await fetch(`${API_URL}/api/cargas`);
         const r = await res.json();
         if (r.success) {
             cargasGlobales = r.data;
@@ -402,7 +403,7 @@
     }
 
     async function cambiarEstado(id, nuevoEstado) {
-        const res = await fetch(`http://localhost:3001/api/cargas/${id}/estado`, {
+        const res = await fetch(`${API_URL}/api/cargas/${id}/estado`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ estado: nuevoEstado, rol_usuario: usuarioSesion.rol })
@@ -433,7 +434,7 @@
 
     async function borrarHistorial() {
         if (!confirm('¿Borrar todo el historial?')) return;
-        const res = await fetch('http://localhost:3001/api/cargas', {
+        const res = await fetch(`${API_URL}/api/cargas`, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ rol_usuario: usuarioSesion.rol })
