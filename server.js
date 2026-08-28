@@ -75,7 +75,7 @@ app.post('/api/cargas', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Inserción con estado por defecto
+    // Inserción de la carga con estado por defecto 'Por Liquidar'
     const resCarga = await client.query(
       'INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado) VALUES ($1, $2, $3, $4) RETURNING id',
       [codigo_carga, proveedor, usuario_registro, 'Por Liquidar']
@@ -83,8 +83,11 @@ app.post('/api/cargas', async (req, res) => {
     const cargaId = resCarga.rows[0].id;
 
     for (let lote of lotes) {
-      // Cálculos de peso con fallback a 0 para prevenir errores de tipo
-      const pesoMuestrasTotal = lote.pesos_muestras ? lote.pesos_muestras.reduce((a, b) => a + Number(b), 0) : 0;
+      // Cálculos de pesos y número de muestras
+      const arrayMuestras = lote.pesos_muestras || [];
+      const cantidadMuestras = arrayMuestras.length;
+      const pesoMuestrasTotal = arrayMuestras.reduce((a, b) => a + Number(b), 0);
+      
       const pesoBruto = Number(lote.peso_bruto) || 0;
       const tara = Number(lote.tara) || 0;
       const porcentajeHumedad = Number(lote.porcentaje_humedad) || 0;
@@ -94,17 +97,18 @@ app.post('/api/cargas', async (req, res) => {
 
       await client.query(
         `INSERT INTO lotes 
-          (carga_id, codigo_lote, peso_bruto, tara, peso_muestras_total, porcentaje_humedad, peso_seco_neto, pesos_muestras, ley_au_g_kg, ley_ag_g_kg, embalaje, punto_recepcion, ubicacion_fisica) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+          (carga_id, codigo_lote, peso_bruto, tara, peso_muestras_total, cantidad_muestras, porcentaje_humedad, peso_seco_neto, pesos_muestras, ley_au_g_kg, ley_ag_g_kg, embalaje, punto_recepcion, ubicacion_fisica) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
         [
           cargaId,
           lote.codigo_lote,
           pesoBruto,
           tara,
           pesoMuestrasTotal.toFixed(2),
+          cantidadMuestras,
           porcentajeHumedad,
           pesoSecoNeto.toFixed(2),
-          JSON.stringify(lote.pesos_muestras || []),
+          JSON.stringify(arrayMuestras),
           Number(lote.ley_au_g_kg) || 0,
           Number(lote.ley_ag_g_kg) || 0,
           lote.embalaje || 'SACOS',
