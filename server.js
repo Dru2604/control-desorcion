@@ -159,7 +159,7 @@ app.delete('/api/cargas', async (req, res) => {
 // MÓDULO EXCLUSIVO DE GERENCIA / CONTROL MAESTRO
 // ==========================================
 
-// Endpoint: Obtener/Actualizar Precios e Indicadores Financieros
+// Endpoint: Obtener Precios e Indicadores Financieros
 app.get('/api/gerencia/parametros', verificarGerencia, async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM parametros_gerencia ORDER BY id DESC LIMIT 1');
@@ -170,6 +170,7 @@ app.get('/api/gerencia/parametros', verificarGerencia, async (req, res) => {
   }
 });
 
+// Endpoint: Actualizar Precios e Indicadores Financieros
 app.post('/api/gerencia/parametros', verificarGerencia, async (req, res) => {
   const { precio_inter_au_usd, precio_inter_ag_usd, factor_oz_g } = req.body;
   try {
@@ -181,6 +182,23 @@ app.post('/api/gerencia/parametros', verificarGerencia, async (req, res) => {
   } catch (err) {
     console.error('Error al actualizar parámetros:', err);
     res.status(500).json({ success: false, error: 'Error al guardar parámetros.' });
+  }
+});
+
+// Endpoint: Actualizar Leyes de Laboratorio en un Lote Específico
+app.patch('/api/lotes/:id/leyes', verificarGerencia, async (req, res) => {
+  const { id } = req.params;
+  const { ley_au_g_kg, ley_ag_g_kg, ubicacion_fisica } = req.body;
+
+  try {
+    await pool.query(
+      'UPDATE lotes SET ley_au_g_kg = $1, ley_ag_g_kg = $2, ubicacion_fisica = $3 WHERE id = $4',
+      [ley_au_g_kg || 0, ley_ag_g_kg || 0, ubicacion_fisica || 'Stock físico', id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error al actualizar leyes:', err);
+    res.status(500).json({ success: false, error: 'Error al actualizar las leyes del lote.' });
   }
 });
 
