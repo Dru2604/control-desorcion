@@ -9,7 +9,7 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Conexión a Supabase
+// Conexión a Supabase deshabilitando la comprobación estricta de certificados SSL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -67,7 +67,7 @@ app.get('/api/cargas', async (req, res) => {
   }
 });
 
-// Endpoint: Registrar nueva carga con sus lotes (Incluye descuento_humedad_kg)
+// Endpoint: Registrar nueva carga con sus lotes (Muestras ingresadas en Gramos)
 app.post('/api/cargas', async (req, res) => {
   const { codigo_carga, proveedor, usuario_registro, lotes } = req.body;
   const client = await pool.connect();
@@ -75,6 +75,7 @@ app.post('/api/cargas', async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    // Inserción de la carga
     const resCarga = await client.query(
       'INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado) VALUES ($1, $2, $3, $4) RETURNING id',
       [codigo_carga, proveedor, usuario_registro, 'Por Liquidar']
@@ -82,16 +83,21 @@ app.post('/api/cargas', async (req, res) => {
     const cargaId = resCarga.rows[0].id;
 
     for (let lote of lotes) {
-      const arrayMuestras = lote.pesos_muestras || [];
-      const cantidadMuestras = arrayMuestras.length;
-      const pesoMuestrasTotal = arrayMuestras.reduce((a, b) => a + Number(b), 0);
+      const arrayMuestrasGramos = lote.pesos_muestras || [];
+      const cantidadMuestras = arrayMuestrasGramos.length;
+      
+      // Suma total de las muestras en GRAMOS
+      const totalMuestrasGramos = arrayMuestrasGramos.reduce((a, b) => a + Number(b), 0);
+      
+      // Conversión de Muestras a KILOGRAMOS para los cálculos del lote (gramos / 1000)
+      const pesoMuestrasKg = totalMuestrasGramos / 1000;
       
       const pesoBruto = Number(lote.peso_bruto) || 0;
       const tara = Number(lote.tara) || 0;
       const porcentajeHumedad = Number(lote.porcentaje_humedad) || 0;
 
-      // Cálculos de pesos y descuento por humedad
-      const pesoNetoHumedo = pesoBruto - tara - pesoMuestrasTotal;
+      // Cálculos de pesos utilizando kilogramos
+      const pesoNetoHumedo = pesoBruto - tara - pesoMuestrasKg;
       const descuentoHumedadKg = pesoNetoHumedo * (porcentajeHumedad / 100);
       const pesoSecoNeto = pesoNetoHumedo - descuentoHumedadKg;
 
@@ -104,13 +110,13 @@ app.post('/api/cargas', async (req, res) => {
           lote.codigo_lote,
           pesoBruto,
           tara,
-          pesoMuestrasTotal.toFixed(2),
+          pesoMuestrasKg.toFixed(3), // Se guarda el total acumulado descontado en kg con 3 decimales
           cantidadMuestras,
           pesoNetoHumedo.toFixed(2),
           porcentajeHumedad,
           descuentoHumedadKg.toFixed(2),
           pesoSecoNeto.toFixed(2),
-          JSON.stringify(arrayMuestras),
+          JSON.stringify(arrayMuestrasGramos), // Se conservan los valores individuales ingresados en gramos
           Number(lote.ley_au_g_kg) || 0,
           Number(lote.ley_ag_g_kg) || 0,
           lote.embalaje || 'SACOS',
