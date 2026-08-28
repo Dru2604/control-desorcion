@@ -7,12 +7,10 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background: #f0f2f5; color: #1c1e21; display: flex; min-height: 100vh; }
         
-        /* PANTALLA PRELIMINAR (LOGIN) */
         #loginSection { position: fixed; top:0; left:0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #1a202c; z-index: 999; }
         .login-box { background: white; padding: 35px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; }
         .logo-login { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e0; }
 
-        /* BARRA LATERAL IZQUIERDA (SIDEBAR) */
         .sidebar { width: 250px; background: #1a202c; color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 20px 10px; position: fixed; height: 100vh; }
         .sidebar-top { text-align: center; }
         .logo-sidebar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #4a5568; }
@@ -21,13 +19,11 @@
         .nav-btn:hover, .nav-btn.active { background: #2d3748; color: white; }
         .sidebar-bottom { border-top: 1px solid #2d3748; padding-top: 15px; }
 
-        /* CONTENIDO PRINCIPAL */
         .main-content { margin-left: 250px; flex: 1; padding: 30px; max-width: calc(100vw - 250px); }
         .card { background: white; padding: 22px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .seccion-app { display: none; }
         .seccion-app.active { display: block; }
 
-        /* FORMULARIOS Y BOTONES */
         .campo { margin-bottom: 12px; text-align: left; }
         label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #4a5568; }
         input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
@@ -36,7 +32,6 @@
         .btn-secundario { background: #718096; font-size: 12px; }
         .btn-peligro { background: #e53e3e; }
         
-        /* TABLA DE CARGAS Y LOTES */
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0; }
         th { background: #2d3748; color: white; }
@@ -44,7 +39,6 @@
         .detalles-lotes { background: #edf2f7; display: none; }
         .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
 
-        /* MÓDULO DE GERENCIA / CONTROL MAESTRO */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
         .kpi-card { background: #2b6cb0; color: white; padding: 18px; border-radius: 8px; text-align: center; }
         .kpi-card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
@@ -53,7 +47,6 @@
 </head>
 <body>
 
-<!-- PANTALLA PRELIMINAR (LOGIN CON LOGO) -->
 <div id="loginSection">
     <div class="login-box">
         <img src="logo.jpeg" alt="Logo" class="logo-login">
@@ -75,7 +68,6 @@
     </div>
 </div>
 
-<!-- BARRA LATERAL IZQUIERDA (SIDEBAR) -->
 <div id="sidebarApp" class="sidebar" style="display: none;">
     <div class="sidebar-top">
         <img src="logo.jpeg" alt="Logo" class="logo-sidebar">
@@ -84,7 +76,6 @@
             <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)">📝 Registrar Carga</button>
             <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)">🔍 Buscar y Filtrar</button>
             <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)">📋 Historial General</button>
-            <!-- BOTÓN EXCLUSIVO DE GERENCIA -->
             <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none; background: #2b6cb0; color: white;">📊 Control Maestro</button>
         </div>
     </div>
@@ -96,10 +87,8 @@
     </div>
 </div>
 
-<!-- CONTENIDO PRINCIPAL A LA DERECHA -->
 <div id="mainApp" class="main-content" style="display: none;">
 
-    <!-- SECCIÓN 1: REGISTRAR CARGA -->
     <div id="secNuevo" class="seccion-app active">
         <div class="card">
             <h3>📦 Registrar Nueva Carga y Lotes</h3>
@@ -134,12 +123,11 @@
 
                 <button type="button" onclick="agregarCampoLote()" class="btn-secundario" style="margin-bottom: 15px;">+ Agregar Otro Lote</button>
                 <br>
-                <button type="submit">Guardar Carga Completa</button>
+                <button type="submit" id="btnGuardar">Guardar Carga Completa</button>
             </form>
         </div>
     </div>
 
-    <!-- SECCIÓN 2: BUSCAR Y FILTRAR -->
     <div id="secBuscar" class="seccion-app">
         <div class="card">
             <h3>🔍 Motor de Búsqueda y Filtros</h3>
@@ -164,7 +152,6 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 3: HISTORIAL GENERAL -->
     <div id="secHistorial" class="seccion-app">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -184,14 +171,11 @@
                         <th>Acciones</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Dinámico -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
 
-    <!-- SECCIÓN 4: CONTROL MAESTRO DE GERENCIA -->
     <div id="secGerencia" class="seccion-app">
         <div class="card">
             <h3>📊 Control Maestro de Carbón y Valorización Financiera</h3>
@@ -231,9 +215,7 @@
                         <th>Estatus</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Dinámico Gerencia -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
     </div>
@@ -245,7 +227,6 @@
     let usuarioSesion = null;
     let cargasGlobales = [];
 
-    // LOGIN
     document.getElementById('formLogin').addEventListener('submit', async (e) => {
         e.preventDefault();
         const usuario = document.getElementById('userLogin').value;
@@ -286,7 +267,6 @@
             document.getElementById('btnVaciar').style.display = 'block';
         }
 
-        // MOSTRAR OPCIÓN DE GERENCIA SI TIENE ROL GERENCIA
         if (usuarioSesion.rol === 'GERENCIA') {
             document.getElementById('btnMenuGerencia').style.display = 'flex';
         }
@@ -320,7 +300,7 @@
         const cantidad = parseInt(parent.querySelector('.l-cant-muestras').value);
         const cont = parent.querySelector('.contenedor-campos-muestras');
 
-        if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida.');
+        if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida de muestras.');
 
         cont.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 5px;"></div>';
         const grid = cont.querySelector('div');
@@ -337,12 +317,13 @@
 
     function agregarCampoLote() {
         const cont = document.getElementById('contenedorLotes');
+        const numLote = cont.querySelectorAll('.lote-item').length + 1;
         const div = document.createElement('div');
         div.className = 'lote-item card';
         div.style.marginTop = '10px';
         div.innerHTML = `
             <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required placeholder="LOTE-02"></div>
+                <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required placeholder="LOTE-0${numLote}"></div>
                 <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" required></div>
                 <div><label>Tara (kg):</label><input type="number" step="0.01" class="l-tara" required></div>
                 <div><label>Humedad (%):</label><input type="number" step="0.01" class="l-humedad" required></div>
@@ -353,7 +334,7 @@
                         <label>¿Cuántas muestras son para este lote?:</label>
                         <input type="number" class="l-cant-muestras" min="1" placeholder="Ej: 3">
                     </div>
-                    <button type="button" class="btn-secundario" onclick="generarCamposMuestras(this)">Generar Muestras</button>
+                    <button type="button" class="btn-secundario" onclick="generarCamposMuestras(this)">Generar Campos de Muestras</button>
                 </div>
                 <div class="contenedor-campos-muestras" style="margin-top: 10px;"></div>
             </div>
@@ -363,6 +344,10 @@
 
     document.getElementById('formCarga').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const btnGuardar = document.getElementById('btnGuardar');
+        btnGuardar.disabled = true;
+        btnGuardar.innerText = 'Guardando...';
+
         const codigo_carga = document.getElementById('codigo_carga').value;
         const proveedor = document.getElementById('proveedor').value;
 
@@ -371,7 +356,12 @@
 
         for (let el of lotesElems) {
             const inputsMuestras = el.querySelectorAll('.peso-muestra-val');
-            if (inputsMuestras.length === 0) return alert('Genera y llena los pesos de muestras.');
+            if (inputsMuestras.length === 0) {
+                alert('Genera y llena los pesos de muestras para cada lote.');
+                btnGuardar.disabled = false;
+                btnGuardar.innerText = 'Guardar Carga Completa';
+                return;
+            }
 
             lotes.push({
                 codigo_lote: el.querySelector('.l-codigo').value,
@@ -382,17 +372,28 @@
             });
         }
 
-        const res = await fetch(`${API_URL}/api/cargas`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, lotes })
-        });
+        try {
+            const res = await fetch(`${API_URL}/api/cargas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, lotes })
+            });
 
-        const r = await res.json();
-        if (r.success) {
-            alert('Carga guardada.');
-            document.getElementById('formCarga').reset();
-            cargarCargas();
+            const r = await res.json();
+            if (r.success) {
+                alert('Carga guardada exitosamente.');
+                document.getElementById('formCarga').reset();
+                document.querySelectorAll('.contenedor-campos-muestras').forEach(c => c.innerHTML = '');
+                cargarCargas();
+                mostrarSeccion('secHistorial');
+            } else {
+                alert(r.error || 'Error al guardar.');
+            }
+        } catch (err) {
+            alert('Error de conexión al guardar.');
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerText = 'Guardar Carga Completa';
         }
     });
 
@@ -463,7 +464,6 @@
         });
     }
 
-    // CARGAR DATOS EXCLUSIVOS DE GERENCIA
     async function cargarControlMaestroGerencia() {
         try {
             const res = await fetch(`${API_URL}/api/gerencia/control-maestro`, {
