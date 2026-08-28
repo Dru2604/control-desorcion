@@ -9,7 +9,7 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Conexión a Supabase deshabilitando la comprobación estricta de certificados SSL
+// Conexión a Supabase
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
@@ -67,7 +67,7 @@ app.get('/api/cargas', async (req, res) => {
   }
 });
 
-// Endpoint: Registrar nueva carga con sus lotes (Incluye peso_humedo_neto)
+// Endpoint: Registrar nueva carga con sus lotes (Incluye descuento_humedad_kg)
 app.post('/api/cargas', async (req, res) => {
   const { codigo_carga, proveedor, usuario_registro, lotes } = req.body;
   const client = await pool.connect();
@@ -75,7 +75,6 @@ app.post('/api/cargas', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Inserción de la carga
     const resCarga = await client.query(
       'INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado) VALUES ($1, $2, $3, $4) RETURNING id',
       [codigo_carga, proveedor, usuario_registro, 'Por Liquidar']
@@ -91,14 +90,15 @@ app.post('/api/cargas', async (req, res) => {
       const tara = Number(lote.tara) || 0;
       const porcentajeHumedad = Number(lote.porcentaje_humedad) || 0;
 
-      // Cálculos de pesos netos
+      // Cálculos de pesos y descuento por humedad
       const pesoNetoHumedo = pesoBruto - tara - pesoMuestrasTotal;
-      const pesoSecoNeto = pesoNetoHumedo * (1 - porcentajeHumedad / 100);
+      const descuentoHumedadKg = pesoNetoHumedo * (porcentajeHumedad / 100);
+      const pesoSecoNeto = pesoNetoHumedo - descuentoHumedadKg;
 
       await client.query(
         `INSERT INTO lotes 
-          (carga_id, codigo_lote, peso_bruto, tara, peso_muestras_total, cantidad_muestras, peso_humedo_neto, porcentaje_humedad, peso_seco_neto, pesos_muestras, ley_au_g_kg, ley_ag_g_kg, embalaje, punto_recepcion, ubicacion_fisica) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+          (carga_id, codigo_lote, peso_bruto, tara, peso_muestras_total, cantidad_muestras, peso_humedo_neto, porcentaje_humedad, descuento_humedad_kg, peso_seco_neto, pesos_muestras, ley_au_g_kg, ley_ag_g_kg, embalaje, punto_recepcion, ubicacion_fisica) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
         [
           cargaId,
           lote.codigo_lote,
@@ -108,6 +108,7 @@ app.post('/api/cargas', async (req, res) => {
           cantidadMuestras,
           pesoNetoHumedo.toFixed(2),
           porcentajeHumedad,
+          descuentoHumedadKg.toFixed(2),
           pesoSecoNeto.toFixed(2),
           JSON.stringify(arrayMuestras),
           Number(lote.ley_au_g_kg) || 0,
