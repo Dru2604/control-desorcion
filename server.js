@@ -17,6 +17,18 @@ const pool = new Pool({
   }
 });
 
+// Middleware de verificación para rutas exclusivas de Gerencia
+function verificarGerencia(req, res, next) {
+  const rol = req.headers['x-rol-usuario'] || req.body.rol_usuario;
+  if (rol !== 'GERENCIA') {
+    return res.status(403).json({ 
+      success: false, 
+      error: 'Acceso denegado. Este módulo es exclusivo para Gerencia.' 
+    });
+  }
+  next();
+}
+
 // Endpoint: Inicio de sesión
 app.post('/api/login', async (req, res) => {
   const { usuario, password } = req.body;
@@ -71,23 +83,28 @@ app.post('/api/cargas', async (req, res) => {
 
     for (let lote of lotes) {
       // Cálculos de peso
-      const pesoMuestrasTotal = lote.pesos_muestras.reduce((a, b) => a + b, 0);
+      const pesoMuestrasTotal = lote.pesos_muestras ? lote.pesos_muestras.reduce((a, b) => a + b, 0) : 0;
       const pesoNetoHumedo = lote.peso_bruto - lote.tara - pesoMuestrasTotal;
       const pesoSecoNeto = pesoNetoHumedo * (1 - lote.porcentaje_humedad / 100);
 
       await client.query(
         `INSERT INTO lotes 
-          (carga_id, codigo_lote, peso_bruto, tara, peso_muestras_total, porcentaje_humedad, peso_seco_neto, pesos_muestras) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          (carga_id, codigo_lote, peso_bruto, tara, peso_muestras_total, porcentaje_humedad, peso_seco_neto, pesos_muestras, ley_au_g_kg, ley_ag_g_kg, embalaje, punto_recepcion, ubicacion_fisica) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           cargaId,
           lote.codigo_lote,
           lote.peso_bruto,
-          lote.tara,
+          lote.tara || 0,
           pesoMuestrasTotal,
           lote.porcentaje_humedad,
           pesoSecoNeto.toFixed(2),
-          JSON.stringify(lote.pesos_muestras)
+          JSON.stringify(lote.pesos_muestras || []),
+          lote.ley_au_g_kg || 0,
+          lote.ley_ag_g_kg || 0,
+          lote.embalaje || 'SACOS',
+          lote.punto_recepcion || 'CHAPARRA',
+          lote.ubicacion_fisica || 'Stock físico'
         ]
       );
     }
@@ -108,7 +125,7 @@ app.patch('/api/cargas/:id/estado', async (req, res) => {
   const { id } = req.params;
   const { estado, rol_usuario } = req.body;
 
-  if (rol_usuario !== 'ADMIN' && rol_usuario !== 'SUPERVISOR') {
+  if (rol_usuario !== 'ADMIN' && rol_usuario !== 'SUPERVISOR' && rol_usuario !== 'GERENCIA') {
     return res.status(403).json({ success: false, error: 'No tienes permisos para cambiar el estado.' });
   }
 
@@ -135,6 +152,82 @@ app.delete('/api/cargas', async (req, res) => {
   } catch (err) {
     console.error('Error al borrar historial:', err);
     res.status(500).json({ success: false, error: 'Error al vaciar la base de datos.' });
+  }
+});
+
+// ==========================================
+// MÓDULO EXCLUSIVO DE GERENCIA / CONTROL MAESTRO
+// ==========================================
+
+// Endpoint: Obtener/Actualizar Precios e Indicadores Financieros
+app.get('/api/gerencia/parametros', verificarGerencia, async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT * FROM parametros_gerencia ORDER BY id DESC LIMIT 1');
+    res.json({ success: true, data: rows[0] || { precio_inter_au_usd: 4600, precio_inter_ag_usd: 68, factor_oz_g: 31.1035 } });
+  } catch (err) {
+    console.error('Error al obtener parámetros:', err);
+    res.status(500).json({ success: false, error: 'Error al consultar parámetros gerenciales.' });
+  }
+});
+
+app.post('/api/gerencia/parametros', verificarGerencia, async (req, res) => {
+  const { precio_inter_au_usd, precio_inter_ag_usd, factor_oz_g } = req.body;
+  try {
+    await pool.query(
+      'INSERT INTO parametros_gerencia (precio_inter_au_usd, precio_inter_ag_usd, factor_oz_g) VALUES ($1, $2, $3)',
+      [precio_inter_au_usd, precio_inter_ag_usd, factor_oz_g || 31.1035]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Error al actualizar parámetros:', err);
+    res.status(500).json({ success: false, error: 'Error al guardar parámetros.' });
+  }
+});
+
+// Endpoint: Reporte Control Maestro de Carbón y Valorización (Solo GERENCIA)
+app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => {
+  try {
+    // Parámetros de conversión y mercado
+    const paramsRes = await pool.query('SELECT * FROM parametros_gerencia ORDER BY id DESC LIMIT 1');
+    const params = paramsRes.rows[0] || { precio_inter_au_usd: 4600, precio_inter_ag_usd: 68, factor_oz_g: 31.1035 };
+    
+    const factor = Number(params.factor_oz_g);
+    const precioAu = Number(params.precio_inter_au_usd);
+    const precioAg = Number(params.precio_inter_ag_usd);
+
+    const query = `
+      SELECT 
+        c.proveedor,
+        l.codigo_lote,
+        c.estado AS estatus,
+        l.ubicacion_fisica,
+        l.peso_bruto,
+        l.porcentaje_humedad,
+        l.peso_seco_neto,
+        l.ley_au_g_kg,
+        l.ley_ag_g_kg,
+        (l.peso_seco_neto * l.ley_au_g_kg) AS finos_au_g,
+        (l.peso_seco_neto * l.ley_ag_g_kg) AS finos_ag_g,
+        ((l.peso_seco_neto * l.ley_au_g_kg) / $1) AS au_oz,
+        ((l.peso_seco_neto * l.ley_ag_g_kg) / $1) AS ag_oz,
+        (((l.peso_seco_neto * l.ley_au_g_kg) / $1) * $2) AS valor_au_usd,
+        (((l.peso_seco_neto * l.ley_ag_g_kg) / $1) * $3) AS valor_ag_usd,
+        ((((l.peso_seco_neto * l.ley_au_g_kg) / $1) * $2) + (((l.peso_seco_neto * l.ley_ag_g_kg) / $1) * $3)) AS valor_total_usd
+      FROM cargas c
+      JOIN lotes l ON c.id = l.carga_id
+      ORDER BY c.proveedor ASC, l.codigo_lote ASC;
+    `;
+
+    const { rows } = await pool.query(query, [factor, precioAu, precioAg]);
+
+    res.json({
+      success: true,
+      parametros: params,
+      data: rows
+    });
+  } catch (err) {
+    console.error('Error en control maestro:', err);
+    res.status(500).json({ success: false, error: 'Error al generar reporte de control maestro.' });
   }
 });
 
