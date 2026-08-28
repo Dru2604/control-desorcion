@@ -9,7 +9,7 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Conexión a Supabase con SSL habilitado
+// Conexión a Supabase deshabilitando la comprobación estricta de certificados SSL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
