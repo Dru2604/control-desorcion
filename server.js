@@ -67,7 +67,7 @@ app.get('/api/cargas', async (req, res) => {
   }
 });
 
-// Endpoint: Registrar nueva carga con sus lotes
+// Endpoint: Registrar nueva carga con sus lotes (Versión corregida y blindada)
 app.post('/api/cargas', async (req, res) => {
   const { codigo_carga, proveedor, usuario_registro, lotes } = req.body;
   const client = await pool.connect();
@@ -75,17 +75,22 @@ app.post('/api/cargas', async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    // Inserción con estado por defecto
     const resCarga = await client.query(
-      'INSERT INTO cargas (codigo_carga, proveedor, usuario_registro) VALUES ($1, $2, $3) RETURNING id',
-      [codigo_carga, proveedor, usuario_registro]
+      'INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado) VALUES ($1, $2, $3, $4) RETURNING id',
+      [codigo_carga, proveedor, usuario_registro, 'Por Liquidar']
     );
     const cargaId = resCarga.rows[0].id;
 
     for (let lote of lotes) {
-      // Cálculos de peso
-      const pesoMuestrasTotal = lote.pesos_muestras ? lote.pesos_muestras.reduce((a, b) => a + b, 0) : 0;
-      const pesoNetoHumedo = lote.peso_bruto - lote.tara - pesoMuestrasTotal;
-      const pesoSecoNeto = pesoNetoHumedo * (1 - lote.porcentaje_humedad / 100);
+      // Cálculos de peso con fallback a 0 para prevenir errores de tipo
+      const pesoMuestrasTotal = lote.pesos_muestras ? lote.pesos_muestras.reduce((a, b) => a + Number(b), 0) : 0;
+      const pesoBruto = Number(lote.peso_bruto) || 0;
+      const tara = Number(lote.tara) || 0;
+      const porcentajeHumedad = Number(lote.porcentaje_humedad) || 0;
+
+      const pesoNetoHumedo = pesoBruto - tara - pesoMuestrasTotal;
+      const pesoSecoNeto = pesoNetoHumedo * (1 - porcentajeHumedad / 100);
 
       await client.query(
         `INSERT INTO lotes 
@@ -94,14 +99,14 @@ app.post('/api/cargas', async (req, res) => {
         [
           cargaId,
           lote.codigo_lote,
-          lote.peso_bruto,
-          lote.tara || 0,
-          pesoMuestrasTotal,
-          lote.porcentaje_humedad,
+          pesoBruto,
+          tara,
+          pesoMuestrasTotal.toFixed(2),
+          porcentajeHumedad,
           pesoSecoNeto.toFixed(2),
           JSON.stringify(lote.pesos_muestras || []),
-          lote.ley_au_g_kg || 0,
-          lote.ley_ag_g_kg || 0,
+          Number(lote.ley_au_g_kg) || 0,
+          Number(lote.ley_ag_g_kg) || 0,
           lote.embalaje || 'SACOS',
           lote.punto_recepcion || 'CHAPARRA',
           lote.ubicacion_fisica || 'Stock físico'
@@ -114,7 +119,7 @@ app.post('/api/cargas', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Error al guardar carga:', err);
-    res.status(500).json({ success: false, error: 'Error al guardar el registro en la base de datos.' });
+    res.status(500).json({ success: false, error: 'Error interno al guardar la carga en la base de datos.' });
   } finally {
     client.release();
   }
@@ -205,7 +210,6 @@ app.patch('/api/lotes/:id/leyes', verificarGerencia, async (req, res) => {
 // Endpoint: Reporte Control Maestro de Carbón y Valorización (Solo GERENCIA)
 app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => {
   try {
-    // Parámetros de conversión y mercado
     const paramsRes = await pool.query('SELECT * FROM parametros_gerencia ORDER BY id DESC LIMIT 1');
     const params = paramsRes.rows[0] || { precio_inter_au_usd: 4600, precio_inter_ag_usd: 68, factor_oz_g: 31.1035 };
     
