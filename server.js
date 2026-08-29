@@ -93,12 +93,28 @@ app.patch('/api/cargas/:id/estado', async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, error: 'Error al actualizar.' }); }
 });
 
+/* ENDPOINT CORREGIDO PARA LIMPIEZA TOTAL EN CASCADA */
 app.delete('/api/cargas', async (req, res) => {
-  if (req.body.rol_usuario !== 'ADMIN') return res.status(403).json({ success: false, error: 'Solo admin.' });
+  const { rol_usuario } = req.body;
+  if (rol_usuario !== 'ADMIN' && rol_usuario !== 'GERENCIA') {
+    return res.status(403).json({ success: false, error: 'Acceso denegado. Solo administradores o gerencia pueden vaciar el historial.' });
+  }
+
+  const client = await pool.connect();
   try {
-    await pool.query('TRUNCATE TABLE cargas CASCADE');
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ success: false, error: 'Error al vaciar.' }); }
+    await client.query('BEGIN');
+    await client.query('TRUNCATE TABLE inventario_carbon_desorbido RESTART IDENTITY CASCADE');
+    await client.query('TRUNCATE TABLE lotes RESTART IDENTITY CASCADE');
+    await client.query('TRUNCATE TABLE cargas RESTART IDENTITY CASCADE');
+    await client.query('COMMIT');
+
+    res.json({ success: true, message: 'Historial vaciado completamente.' });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success: false, error: 'Error al vaciar la base de datos.' });
+  } finally {
+    client.release();
+  }
 });
 
 app.get('/api/reportes/mensual', async (req, res) => {
@@ -124,7 +140,6 @@ app.get('/api/reportes/mensual', async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, error: 'Error al generar reporte.' }); }
 });
 
-/* RETORNA CAMPOS DE PESO BRUTO CORREGIDOS */
 app.get('/api/carbon-desorbido', async (req, res) => {
   try {
     const movimientosResult = await pool.query('SELECT * FROM inventario_carbon_desorbido ORDER BY fecha DESC');
