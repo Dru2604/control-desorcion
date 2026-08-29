@@ -76,7 +76,6 @@
 
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
 
-        /* ESTILO SIMPLIFICADO DE TABLA DE HISTORIAL */
         .tabla-simplificada {
             background: #ffffff;
             border: 1px solid #cbd5e0;
@@ -215,7 +214,7 @@
         </div>
     </div>
 
-    <!-- 3. HISTORIAL GENERAL SIMPLIFICADO -->
+    <!-- 3. HISTORIAL GENERAL -->
     <div id="secHistorial" class="seccion-app">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -470,7 +469,7 @@
         document.getElementById('lblNombreUsuario').innerText = usuarioSesion.nombre;
         document.getElementById('lblRolUsuario').innerText = usuarioSesion.rol;
 
-        if (usuarioSesion.rol === 'ADMIN') {
+        if (usuarioSesion.rol === 'ADMIN' || usuarioSesion.rol === 'GERENCIA') {
             document.getElementById('btnVaciar').style.display = 'block';
         }
 
@@ -513,6 +512,32 @@
         }
 
         if (btn) btn.classList.add('active');
+    }
+
+    /* FUNCIÓN CORREGIDA PARA VACIAR EL HISTORIAL EN CASCADA */
+    async function borrarHistorial() {
+        if (!confirm('⚠️ ¿Estás seguro de que deseas vaciar TODO el historial de cargas, lotes y movimientos?\nSe reiniciará la base de datos para pruebas.')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/cargas`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ rol_usuario: usuarioSesion.rol })
+            });
+
+            const r = await res.json();
+            if (r.success) {
+                alert('Historial vaciado completamente.');
+                cargarCargas();
+                cargarCarbonDesorbido();
+            } else {
+                alert(r.error || 'Error al vaciar el historial.');
+            }
+        } catch (err) {
+            alert('Error de conexión al vaciar.');
+        }
     }
 
     function abrirModalDevolucion(id, proveedor, lote, pesoBruto) {
@@ -775,7 +800,6 @@
         if (r.success) { cargasGlobales = r.data; renderTablaSimplificada(cargasGlobales); }
     }
 
-    /* RENDER SIMPLIFICADO: CONSOLIDADO UNIFICADO CON BBOX DE MUESTRAS */
     function renderTablaSimplificada(lista) {
         const contenedor = document.getElementById('contenedorHistorialSimplificado');
         contenedor.innerHTML = '';
