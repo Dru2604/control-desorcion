@@ -93,7 +93,7 @@ app.patch('/api/cargas/:id/estado', async (req, res) => {
   } catch (err) { res.status(500).json({ success: false, error: 'Error al actualizar.' }); }
 });
 
-/* ENDPOINT CORREGIDO PARA LIMPIEZA TOTAL EN CASCADA */
+/* ENDPOINT PARA LIMPIEZA COMPLETA EN CASCADA */
 app.delete('/api/cargas', async (req, res) => {
   const { rol_usuario } = req.body;
   if (rol_usuario !== 'ADMIN' && rol_usuario !== 'GERENCIA') {
