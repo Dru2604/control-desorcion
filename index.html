@@ -78,7 +78,7 @@
 
         .nav-btn:hover, .nav-btn.active { background: #2d3748; color: #ffffff; }
 
-        /* SECCIÓN INFERIOR DE PERFIL */
+        /* SECCIÓN INFERIOR DE PERFIL TIPO FACEBOOK */
         .sidebar-bottom { 
             border-top: 1px solid #2d3748; 
             padding-top: 12px; 
@@ -97,20 +97,24 @@
         }
 
         .user-avatar-icon {
-            font-size: 20px;
-            background: #2d3748;
-            padding: 8px;
+            font-size: 22px;
+            background: #ffffff;
+            color: #718096;
             border-radius: 50%;
-            min-width: 38px;
-            height: 38px;
+            min-width: 40px;
+            height: 40px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .user-info-text {
             display: flex;
             flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
             opacity: 0;
             transition: opacity 0.2s ease;
             white-space: nowrap;
@@ -225,13 +229,13 @@
         </div>
     </div>
     
-    <!-- SECCIÓN DE PERFIL INFERIOR -->
+    <!-- SECCIÓN DE PERFIL INFERIOR TIPO FACEBOOK -->
     <div class="sidebar-bottom">
         <div class="user-mini-profile">
             <div class="user-avatar-icon">👤</div>
             <div class="user-info-text">
                 <b id="lblNombreUsuario" style="font-size: 13px; color: white;"></b>
-                <span id="lblRolUsuario" class="badge" style="margin-top: 3px; display: inline-block;"></span>
+                <span id="lblRolUsuario" class="badge" style="margin-top: 4px; display: inline-block;"></span>
             </div>
         </div>
         <div class="btn-logout-container">
