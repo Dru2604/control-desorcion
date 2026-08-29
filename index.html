@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Sistema de Control de Desorción</title>
-    <!-- Librerías Externas -->
+    <!-- Librerías Externas para Gráficos, Excel y PDF -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -514,7 +514,7 @@
         if (btn) btn.classList.add('active');
     }
 
-    /* FUNCIÓN CORREGIDA PARA VACIAR EL HISTORIAL EN CASCADA */
+    /* FUNCIÓN PARA VACIAR TODO EL HISTORIAL EN CASCADA */
     async function borrarHistorial() {
         if (!confirm('⚠️ ¿Estás seguro de que deseas vaciar TODO el historial de cargas, lotes y movimientos?\nSe reiniciará la base de datos para pruebas.')) {
             return;
@@ -540,6 +540,30 @@
         }
     }
 
+    /* GENERADOR DE GUÍA DE SALIDA EN PDF */
+    function generarGuiaPDF(datosEntrega) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFontSize(16);
+        doc.text("GUÍA DE DESPACHO Y DEVOLUCIÓN DE CARBÓN", 20, 20);
+        
+        doc.setFontSize(10);
+        doc.text(`Fecha: ${new Date().toLocaleString()}`, 20, 30);
+        doc.text(`Proveedor / Cliente: ${datosEntrega.proveedor}`, 20, 37);
+        doc.text(`Código de Lote: ${datosEntrega.codigo_lote}`, 20, 44);
+        doc.text(`Peso Bruto Entregado: ${datosEntrega.peso} kg`, 20, 51);
+        doc.text(`Observaciones: ${datosEntrega.observaciones || 'Sin observaciones'}`, 20, 58);
+
+        doc.line(20, 90, 80, 90);
+        doc.text("Firma Entregado (Planta)", 25, 95);
+
+        doc.line(120, 90, 180, 90);
+        doc.text("Firma Recibido (Cliente/Chofer)", 122, 95);
+
+        doc.save(`Guia_Devolucion_${datosEntrega.codigo_lote}.pdf`);
+    }
+
     function abrirModalDevolucion(id, proveedor, lote, pesoBruto) {
         const pBruto = parseFloat(pesoBruto || 0);
         document.getElementById('modalLoteId').value = id;
@@ -556,6 +580,7 @@
         document.getElementById('modalDevolucion').style.display = 'none';
     }
 
+    /* REGISTRO DE ENTREGA Y GENERACIÓN AUTOMÁTICA DE GUÍA PDF */
     document.getElementById('formModalDevolucion').addEventListener('submit', async (e) => {
         e.preventDefault();
         const lote_id = document.getElementById('modalLoteId').value;
@@ -593,6 +618,7 @@
             const r = await res.json();
             if (r.success) {
                 alert('Devolución registrada correctamente.');
+                generarGuiaPDF({ proveedor, codigo_lote, peso: peso_a_devolver, observaciones });
                 cerrarModalDevolucion();
                 cargarCarbonDesorbido();
             } else {
