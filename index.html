@@ -17,7 +17,7 @@
         .login-box { background: white; padding: 35px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; }
         .logo-login { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e0; }
 
-        /* NAVEGACIÓN LATERAL RETRÁCTIL */
+        /* NAVEGACIÓN LATERAL RETRÁCTIL MEJORADA */
         .sidebar { 
             width: 70px; 
             background: #1a202c; 
@@ -54,7 +54,6 @@
 
         .menu-items { margin-top: 25px; display: flex; flex-direction: column; gap: 8px; }
         
-        /* OPCIONES DEL MENÚ (TODAS CON TEXTO BLANCO) */
         .nav-btn { 
             background: transparent; 
             color: #ffffff; 
@@ -79,14 +78,60 @@
 
         .nav-btn:hover, .nav-btn.active { background: #2d3748; color: #ffffff; }
 
+        /* SECCIÓN INFERIOR DE USUARIO Y PERFIL LIMPIA */
         .sidebar-bottom { 
             border-top: 1px solid #2d3748; 
-            padding-top: 15px; 
-            white-space: nowrap; 
-            opacity: 0.3;
-            transition: opacity 0.2s;
+            padding-top: 12px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .sidebar:hover .sidebar-bottom { opacity: 1; }
+
+        .user-mini-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 4px;
+            cursor: pointer;
+        }
+
+        .user-avatar-icon {
+            font-size: 20px;
+            background: #2d3748;
+            padding: 8px;
+            border-radius: 50%;
+            min-width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .user-info-text {
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+
+        .sidebar:hover .user-info-text { opacity: 1; }
+
+        .btn-logout-container {
+            width: 100%;
+            margin-top: 10px;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.2s ease, max-height 0.3s ease;
+        }
+
+        .sidebar:hover .btn-logout-container {
+            opacity: 1;
+            max-height: 50px;
+        }
 
         /* CONTENIDO PRINCIPAL ADAPTATIVO */
         .main-content { 
@@ -118,8 +163,6 @@
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0; }
         th { background: #2d3748; color: white; }
-        .fila-carga { background: #f7fafc; font-weight: bold; }
-        .detalles-lotes { background: #edf2f7; display: none; }
         .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
 
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
@@ -181,11 +224,19 @@
             </button>
         </div>
     </div>
+    
+    <!-- SECCIÓN DE PERFIL INFERIOR -->
     <div class="sidebar-bottom">
-        <p style="font-size: 11px; color: #a0aec0;">Usuario:</p>
-        <b id="lblNombreUsuario" style="font-size: 12px; color: white;"></b><br>
-        <span id="lblRolUsuario" class="badge" style="margin-top: 4px; display: inline-block;"></span>
-        <button onclick="cerrarSesion()" class="btn-peligro" style="width: 100%; margin-top: 12px; padding: 6px; font-size: 11px;">Cerrar Sesión</button>
+        <div class="user-mini-profile">
+            <div class="user-avatar-icon">👤</div>
+            <div class="user-info-text">
+                <b id="lblNombreUsuario" style="font-size: 13px; color: white;"></b>
+                <span id="lblRolUsuario" class="badge" style="margin-top: 3px; display: inline-block;"></span>
+            </div>
+        </div>
+        <div class="btn-logout-container">
+            <button onclick="cerrarSesion()" class="btn-peligro" style="width: 100%; padding: 7px; font-size: 12px; margin-top: 5px;">Cerrar Sesión</button>
+        </div>
     </div>
 </div>
 
