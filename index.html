@@ -780,12 +780,12 @@
             const res = await fetch(`${API_URL}/api/carbon-desorbido`);
             const r = await res.json();
             if (r.success) {
-                let sumStock = 0, sumDesorbido = 0, sumDevuelto = 0;
+                let sumPendientes = 0, sumDesorbido = 0, sumDevuelto = 0, sumSalidaVirgen = 0;
 
                 const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
                 tbodyPend.innerHTML = '';
                 r.pendientesDevolucion.forEach(p => {
-                    sumStock += parseFloat(p.peso_seco_neto || 0);
+                    sumPendientes += parseFloat(p.peso_seco_neto || 0);
                     tbodyPend.innerHTML += `
                         <tr>
                             <td><b>${p.proveedor}</b></td>
@@ -803,6 +803,7 @@
                     const peso = parseFloat(m.peso_seco_kg || 0);
                     if (m.tipo_movimiento === 'ENTRADA_DESORCION') sumDesorbido += peso;
                     if (m.tipo_movimiento === 'DEVOLUCION_CLIENTE') sumDevuelto += peso;
+                    if (m.tipo_movimiento === 'VENTA_VIRGEN' || m.tipo_movimiento === 'PRESTAMO_VIRGEN') sumSalidaVirgen += peso;
 
                     tbodyMov.innerHTML += `
                         <tr>
@@ -817,7 +818,11 @@
                     `;
                 });
 
-                document.getElementById('kpiAcopioTotal').innerText = `${sumStock.toFixed(2)} kg`;
+                // CÁLCULO DE STOCK REAL RESTANDO SALIDAS Y DEVOLUCIONES
+                let stockFisicoReal = sumPendientes + sumDesorbido - sumDevuelto - sumSalidaVirgen;
+                if (stockFisicoReal < 0) stockFisicoReal = 0;
+
+                document.getElementById('kpiAcopioTotal').innerText = `${stockFisicoReal.toFixed(2)} kg`;
                 document.getElementById('kpiCarbonDesorbido').innerText = `${sumDesorbido.toFixed(2)} kg`;
                 document.getElementById('kpiDevueltoCliente').innerText = `${sumDevuelto.toFixed(2)} kg`;
             }
