@@ -78,7 +78,7 @@
 
         .nav-btn:hover, .nav-btn.active { background: #2d3748; color: #ffffff; }
 
-        /* SECCIÓN INFERIOR DE PERFIL TIPO FACEBOOK */
+        /* PERFIL TIPO FACEBOOK */
         .sidebar-bottom { 
             border-top: 1px solid #2d3748; 
             padding-top: 12px; 
@@ -137,7 +137,7 @@
             max-height: 50px;
         }
 
-        /* CONTENIDO PRINCIPAL ADAPTATIVO */
+        /* CONTENIDO PRINCIPAL */
         .main-content { 
             margin-left: 70px; 
             flex: 1; 
@@ -170,6 +170,26 @@
         .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
 
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
+
+        /* VENTANA EMERGENTE (MODAL) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
     </style>
 </head>
 <body>
@@ -196,7 +216,7 @@
     </div>
 </div>
 
-<!-- BARRA LATERAL DESPLEGABLE CON HOVER -->
+<!-- BARRA LATERAL -->
 <div id="sidebarApp" class="sidebar" style="display: none;">
     <div class="sidebar-top">
         <img src="logo.jpeg" alt="Logo" class="logo-sidebar">
@@ -229,7 +249,6 @@
         </div>
     </div>
     
-    <!-- SECCIÓN DE PERFIL INFERIOR TIPO FACEBOOK -->
     <div class="sidebar-bottom">
         <div class="user-mini-profile">
             <div class="user-avatar-icon">👤</div>
@@ -346,7 +365,23 @@
     <div id="secDesorcion" class="seccion-app">
         <div class="card">
             <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
-            <p style="font-size: 12px; color: #718096; margin-bottom: 20px;">Modulo exclusivo para Administración y Gerencia.</p>
+            <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Módulo exclusivo para Administración y Gerencia.</p>
+
+            <!-- RESUMEN DE KIS -->
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
+                <div style="background: #3182ce; color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <span style="font-size: 11px; text-transform: uppercase;">📦 Total en Acopio (Stock Físico)</span>
+                    <h3 id="kpiAcopioTotal" style="font-size: 20px; margin-top: 5px;">0.00 kg</h3>
+                </div>
+                <div style="background: #38a169; color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <span style="font-size: 11px; text-transform: uppercase;">🔄 Carbón Desorbido de Planta</span>
+                    <h3 id="kpiCarbonDesorbido" style="font-size: 20px; margin-top: 5px;">0.00 kg</h3>
+                </div>
+                <div style="background: #e53e3e; color: white; padding: 15px; border-radius: 8px; text-align: center;">
+                    <span style="font-size: 11px; text-transform: uppercase;">🤝 Devoluciones a Clientes</span>
+                    <h3 id="kpiDevueltoCliente" style="font-size: 20px; margin-top: 5px;">0.00 kg</h3>
+                </div>
+            </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
                 <div style="background: #e6fffa; padding: 15px; border-radius: 8px; border: 1px solid #319795;">
@@ -500,6 +535,39 @@
 
 </div>
 
+<!-- VENTANA EMERGENTE (MODAL DE DEVOLUCIÓN DE CARBÓN) -->
+<div id="modalDevolucion" class="modal-overlay">
+    <div class="modal-box">
+        <h3 style="margin-bottom: 5px; color: #2d3748;">🤝 Confirmar Devolución a Cliente</h3>
+        <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Registro formal de salida de carbón desorbido.</p>
+        
+        <form id="formModalDevolucion">
+            <input type="hidden" id="modalLoteId">
+            <div class="campo">
+                <label>Proveedor / Minero:</label>
+                <input type="text" id="modalProveedor" readonly style="background: #edf2f7;">
+            </div>
+            <div class="campo">
+                <label>Código de Lote:</label>
+                <input type="text" id="modalLote" readonly style="background: #edf2f7;">
+            </div>
+            <div class="campo">
+                <label>Peso Seco Disponible (kg):</label>
+                <input type="number" step="0.01" id="modalPeso" required>
+            </div>
+            <div class="campo">
+                <label>Observación / Comprobante:</label>
+                <input type="text" id="modalObs" placeholder="Ej: Entregado a chofer Juan Pérez / Guía N° XXX">
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="button" onclick="cerrarModalDevolucion()" class="btn-secundario" style="flex: 1;">Cancelar</button>
+                <button type="submit" class="btn-exito" style="flex: 1;">Confirmar Entrega</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     const API_URL = 'https://backend-desorcion.onrender.com';
     let usuarioSesion = null;
@@ -586,6 +654,106 @@
         }
 
         if (btn) btn.classList.add('active');
+    }
+
+    function abrirModalDevolucion(id, proveedor, lote, peso) {
+        document.getElementById('modalLoteId').value = id;
+        document.getElementById('modalProveedor').value = proveedor;
+        document.getElementById('modalLote').value = lote;
+        document.getElementById('modalPeso').value = peso;
+        document.getElementById('modalObs').value = '';
+        document.getElementById('modalDevolucion').style.display = 'flex';
+    }
+
+    function cerrarModalDevolucion() {
+        document.getElementById('modalDevolucion').style.display = 'none';
+    }
+
+    document.getElementById('formModalDevolucion').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const lote_id = document.getElementById('modalLoteId').value;
+        const proveedor = document.getElementById('modalProveedor').value;
+        const codigo_lote = document.getElementById('modalLote').value;
+        const peso_seco_kg = parseFloat(document.getElementById('modalPeso').value);
+        const observaciones = document.getElementById('modalObs').value;
+
+        try {
+            const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipo_movimiento: 'DEVOLUCION_CLIENTE',
+                    proveedor,
+                    codigo_lote,
+                    peso_seco_kg,
+                    observaciones,
+                    usuario_registro: usuarioSesion.usuario,
+                    lote_id
+                })
+            });
+
+            const r = await res.json();
+            if (r.success) {
+                alert('Devolución registrada correctamente.');
+                cerrarModalDevolucion();
+                cargarCarbonDesorbido();
+            } else {
+                alert(r.error || 'Error al procesar la entrega.');
+            }
+        } catch (err) {
+            alert('Error de conexión.');
+        }
+    });
+
+    async function cargarCarbonDesorbido() {
+        try {
+            const res = await fetch(`${API_URL}/api/carbon-desorbido`);
+            const r = await res.json();
+            if (r.success) {
+                let sumStock = 0, sumDesorbido = 0, sumDevuelto = 0;
+
+                const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
+                tbodyPend.innerHTML = '';
+                r.pendientesDevolucion.forEach(p => {
+                    sumStock += parseFloat(p.peso_seco_neto || 0);
+                    tbodyPend.innerHTML += `
+                        <tr>
+                            <td><b>${p.proveedor}</b></td>
+                            <td>${p.codigo_lote}</td>
+                            <td><b>${parseFloat(p.peso_seco_neto).toFixed(2)} kg</b></td>
+                            <td><span class="badge" style="background:#e2e8f0; color:#2d3748;">${p.ubicacion_fisica}</span></td>
+                            <td><button onclick="abrirModalDevolucion('${p.lote_id}', '${p.proveedor}', '${p.codigo_lote}', '${p.peso_seco_neto}')" class="btn-exito">Entregar al Cliente</button></td>
+                        </tr>
+                    `;
+                });
+
+                const tbodyMov = document.querySelector('#tablaMovimientosCarbon tbody');
+                tbodyMov.innerHTML = '';
+                r.movimientos.forEach(m => {
+                    const peso = parseFloat(m.peso_seco_kg || 0);
+                    if (m.tipo_movimiento === 'ENTRADA_DESORCION') sumDesorbido += peso;
+                    if (m.tipo_movimiento === 'DEVOLUCION_CLIENTE') sumDevuelto += peso;
+
+                    tbodyMov.innerHTML += `
+                        <tr>
+                            <td>${new Date(m.fecha).toLocaleString()}</td>
+                            <td><b>${m.tipo_movimiento}</b></td>
+                            <td>${m.proveedor}</td>
+                            <td>${m.codigo_lote || '-'}</td>
+                            <td>${peso.toFixed(2)} kg</td>
+                            <td>${m.observaciones || '-'}</td>
+                            <td>${m.usuario_registro}</td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('kpiAcopioTotal').innerText = `${sumStock.toFixed(2)} kg`;
+                document.getElementById('kpiCarbonDesorbido').innerText = `${sumDesorbido.toFixed(2)} kg`;
+                document.getElementById('kpiDevueltoCliente').innerText = `${sumDevuelto.toFixed(2)} kg`;
+            }
+        } catch (err) {
+            console.error('Error al cargar movimientos de carbón:', err);
+        }
     }
 
     function generarCamposMuestras(btn) {
@@ -893,46 +1061,6 @@
                 </tr>
             `;
         });
-    }
-
-    async function cargarCarbonDesorbido() {
-        try {
-            const res = await fetch(`${API_URL}/api/carbon-desorbido`);
-            const r = await res.json();
-            if (r.success) {
-                const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
-                tbodyPend.innerHTML = '';
-                r.pendientesDevolucion.forEach(p => {
-                    tbodyPend.innerHTML += `
-                        <tr>
-                            <td><b>${p.proveedor}</b></td>
-                            <td>${p.codigo_lote}</td>
-                            <td><b>${p.peso_seco_neto} kg</b></td>
-                            <td>${p.ubicacion_fisica}</td>
-                            <td><button onclick="entregarLoteCliente('${p.lote_id}', '${p.proveedor}', '${p.codigo_lote}', '${p.peso_seco_neto}')" class="btn-exito">Entregar al Cliente</button></td>
-                        </tr>
-                    `;
-                });
-
-                const tbodyMov = document.querySelector('#tablaMovimientosCarbon tbody');
-                tbodyMov.innerHTML = '';
-                r.movimientos.forEach(m => {
-                    tbodyMov.innerHTML += `
-                        <tr>
-                            <td>${new Date(m.fecha).toLocaleString()}</td>
-                            <td><b>${m.tipo_movimiento}</b></td>
-                            <td>${m.proveedor}</td>
-                            <td>${m.codigo_lote || '-'}</td>
-                            <td>${m.peso_seco_kg} kg</td>
-                            <td>${m.observaciones || '-'}</td>
-                            <td>${m.usuario_registro}</td>
-                        </tr>
-                    `;
-                });
-            }
-        } catch (err) {
-            console.error('Error al cargar movimientos de carbón:', err);
-        }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
