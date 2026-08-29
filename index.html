@@ -11,21 +11,90 @@
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background: #f0f2f5; color: #1c1e21; display: flex; min-height: 100vh; }
+        body { background: #f0f2f5; color: #1c1e21; display: flex; min-height: 100vh; overflow-x: hidden; }
         
-        #loginSection { position: fixed; top:0; left:0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #1a202c; z-index: 999; }
+        #loginSection { position: fixed; top:0; left:0; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; background: #1a202c; z-index: 9999; }
         .login-box { background: white; padding: 35px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; }
         .logo-login { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e0; }
 
-        .sidebar { width: 250px; background: #1a202c; color: white; display: flex; flex-direction: column; justify-content: space-between; padding: 20px 10px; position: fixed; height: 100vh; }
-        .sidebar-top { text-align: center; }
-        .logo-sidebar { width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #4a5568; }
-        .menu-items { margin-top: 30px; display: flex; flex-direction: column; gap: 8px; }
-        .nav-btn { background: transparent; color: #a0aec0; border: none; padding: 12px 15px; width: 100%; text-align: left; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; display: flex; align-items: center; gap: 10px; transition: 0.2s; }
-        .nav-btn:hover, .nav-btn.active { background: #2d3748; color: white; }
-        .sidebar-bottom { border-top: 1px solid #2d3748; padding-top: 15px; }
+        /* NAVEGACIÓN LATERAL RETRÁCTIL (HOVER CON DESPLIEGUE) */
+        .sidebar { 
+            width: 70px; 
+            background: #1a202c; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-between; 
+            padding: 20px 8px; 
+            position: fixed; 
+            height: 100vh; 
+            z-index: 1000;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.15);
+        }
 
-        .main-content { margin-left: 250px; flex: 1; padding: 30px; max-width: calc(100vw - 250px); }
+        .sidebar:hover { 
+            width: 250px; 
+            padding: 20px 12px;
+        }
+
+        .sidebar-top { text-align: center; }
+        .logo-sidebar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #4a5568; transition: 0.3s; }
+        .sidebar:hover .logo-sidebar { width: 70px; height: 70px; }
+        
+        .sidebar-title { 
+            font-size: 14px; 
+            white-space: nowrap; 
+            opacity: 0; 
+            transition: opacity 0.2s ease; 
+        }
+        .sidebar:hover .sidebar-title { opacity: 1; }
+
+        .menu-items { margin-top: 25px; display: flex; flex-direction: column; gap: 8px; }
+        
+        .nav-btn { 
+            background: transparent; 
+            color: #a0aec0; 
+            border: none; 
+            padding: 12px 10px; 
+            width: 100%; 
+            text-align: left; 
+            font-size: 14px; 
+            font-weight: 600; 
+            cursor: pointer; 
+            border-radius: 8px; 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            transition: background 0.2s, color 0.2s; 
+            white-space: nowrap;
+        }
+
+        .nav-btn .icon { font-size: 18px; min-width: 30px; text-align: center; }
+        .nav-btn .text-btn { opacity: 0; transition: opacity 0.2s ease; }
+        .sidebar:hover .nav-btn .text-btn { opacity: 1; }
+
+        .nav-btn:hover, .nav-btn.active { background: #2d3748; color: white; }
+
+        .sidebar-bottom { 
+            border-top: 1px solid #2d3748; 
+            padding-top: 15px; 
+            white-space: nowrap; 
+            opacity: 0.3;
+            transition: opacity 0.2s;
+        }
+        .sidebar:hover .sidebar-bottom { opacity: 1; }
+
+        /* ÁREA PRINCIPAL */
+        .main-content { 
+            margin-left: 70px; 
+            flex: 1; 
+            padding: 30px; 
+            max-width: calc(100vw - 70px); 
+            transition: margin-left 0.3s;
+        }
+
         .card { background: white; padding: 22px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .seccion-app { display: none; }
         .seccion-app.active { display: block; }
@@ -42,13 +111,16 @@
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0; }
         th { background: #2d3748; color: white; }
+        .fila-carga { background: #f7fafc; font-weight: bold; }
+        .detalles-lotes { background: #edf2f7; display: none; }
         .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
 
-        .chart-container { position: relative; height: 320px; width: 100%; margin-top: 15px; }
+        .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
 
+<!-- LOGIN -->
 <div id="loginSection">
     <div class="login-box">
         <img src="logo.jpeg" alt="Logo" class="logo-login">
@@ -70,29 +142,50 @@
     </div>
 </div>
 
+<!-- BARRA LATERAL DESPLEGABLE -->
 <div id="sidebarApp" class="sidebar" style="display: none;">
     <div class="sidebar-top">
         <img src="logo.jpeg" alt="Logo" class="logo-sidebar">
-        <h4 style="font-size: 14px;">CONTROL DE ACOPIO</h4>
+        <h4 class="sidebar-title">CONTROL DE ACOPIO</h4>
         <div class="menu-items">
-            <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)">📝 Registrar Carga</button>
-            <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)">🔍 Buscar y Filtrar</button>
-            <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)">📋 Historial General</button>
-            <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none; background: #319795; color: white;">🔄 Carbón Desorbido</button>
-            <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none; background: #805ad5; color: white;">📈 Reportes Mensuales</button>
-            <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none; background: #2b6cb0; color: white;">📊 Control Maestro</button>
+            <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)">
+                <span class="icon">📝</span>
+                <span class="text-btn">Registrar Carga</span>
+            </button>
+            <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)">
+                <span class="icon">🔍</span>
+                <span class="text-btn">Buscar y Filtrar</span>
+            </button>
+            <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)">
+                <span class="icon">📋</span>
+                <span class="text-btn">Historial General</span>
+            </button>
+            <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none; color: #319795;">
+                <span class="icon">🔄</span>
+                <span class="text-btn">Carbón Desorbido</span>
+            </button>
+            <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none; color: #805ad5;">
+                <span class="icon">📈</span>
+                <span class="text-btn">Reportes Mensuales</span>
+            </button>
+            <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none; color: #3182ce;">
+                <span class="icon">📊</span>
+                <span class="text-btn">Control Maestro</span>
+            </button>
         </div>
     </div>
     <div class="sidebar-bottom">
-        <p style="font-size: 12px; color: #a0aec0; margin-bottom: 5px;">Usuario Activo:</p>
-        <b id="lblNombreUsuario" style="font-size: 13px;"></b><br>
+        <p style="font-size: 11px; color: #a0aec0;">Usuario:</p>
+        <b id="lblNombreUsuario" style="font-size: 12px;"></b><br>
         <span id="lblRolUsuario" class="badge" style="margin-top: 4px; display: inline-block;"></span>
-        <button onclick="cerrarSesion()" class="btn-peligro" style="width: 100%; margin-top: 15px; padding: 6px; font-size: 12px;">Cerrar Sesión</button>
+        <button onclick="cerrarSesion()" class="btn-peligro" style="width: 100%; margin-top: 12px; padding: 6px; font-size: 11px;">Cerrar Sesión</button>
     </div>
 </div>
 
+<!-- CONTENIDO PRINCIPAL -->
 <div id="mainApp" class="main-content" style="display: none;">
 
+    <!-- 1. REGISTRAR CARGA -->
     <div id="secNuevo" class="seccion-app active">
         <div class="card">
             <h3>📦 Registrar Nueva Carga y Lotes</h3>
@@ -132,6 +225,7 @@
         </div>
     </div>
 
+    <!-- 2. BUSCAR -->
     <div id="secBuscar" class="seccion-app">
         <div class="card">
             <h3>🔍 Motor de Búsqueda y Filtros</h3>
@@ -156,6 +250,7 @@
         </div>
     </div>
 
+    <!-- 3. HISTORIAL -->
     <div id="secHistorial" class="seccion-app">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -180,50 +275,7 @@
         </div>
     </div>
 
-    <!-- REPORTES MENSUALES -->
-    <div id="secReportes" class="seccion-app">
-        <div class="card" id="areaReporteImpresion">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <div>
-                    <h3>📈 Reporte Estadístico Mensual de Producción y Valorización</h3>
-                    <p style="font-size: 12px; color: #718096;">Módulo ejecutivo para reuniones de directorio.</p>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="exportarExcel()" class="btn-exito">📗 Exportar a Excel</button>
-                    <button onclick="exportarPDF()" style="background: #e53e3e; color: white;">📕 Descargar PDF</button>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <div class="card" style="border: 1px solid #e2e8f0;">
-                    <h4 style="font-size: 13px; text-align: center;">Kg Seco Procesados por Mes</h4>
-                    <div class="chart-container"><canvas id="chartKgSeco"></canvas></div>
-                </div>
-                <div class="card" style="border: 1px solid #e2e8f0;">
-                    <h4 style="font-size: 13px; text-align: center;">Valorización Total Estimada ($ USD)</h4>
-                    <div class="chart-container"><canvas id="chartValorUsd"></canvas></div>
-                </div>
-            </div>
-
-            <h4 style="margin-top: 20px;">Consolidado Histórico Mensual</h4>
-            <table id="tablaReporteMensual">
-                <thead>
-                    <tr>
-                        <th>Periodo</th>
-                        <th>N° Cargas</th>
-                        <th>N° Lotes</th>
-                        <th>P. Bruto Total (kg)</th>
-                        <th>P. Seco Total (kg)</th>
-                        <th>Est. Au (Oz)</th>
-                        <th>Valor Total (USD)</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- CARBÓN DESORBIDO Y MOVIMIENTOS -->
+    <!-- 4. CARBÓN DESORBIDO -->
     <div id="secDesorcion" class="seccion-app">
         <div class="card">
             <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
@@ -291,11 +343,91 @@
         </div>
     </div>
 
-    <!-- CONTROL MAESTRO GERENCIA -->
+    <!-- 5. REPORTES MENSUALES -->
+    <div id="secReportes" class="seccion-app">
+        <div class="card" id="areaReporteImpresion">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <h3>📈 Reporte Estadístico Mensual de Producción y Valorización</h3>
+                    <p style="font-size: 12px; color: #718096;">Módulo ejecutivo para reuniones de directorio.</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="exportarExcel()" class="btn-exito">📗 Exportar a Excel</button>
+                    <button onclick="exportarPDF()" style="background: #e53e3e; color: white;">📕 Descargar PDF</button>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="card" style="border: 1px solid #e2e8f0;">
+                    <h4 style="font-size: 13px; text-align: center;">Kg Seco Procesados por Mes</h4>
+                    <div class="chart-container"><canvas id="chartKgSeco"></canvas></div>
+                </div>
+                <div class="card" style="border: 1px solid #e2e8f0;">
+                    <h4 style="font-size: 13px; text-align: center;">Valorización Total Estimada ($ USD)</h4>
+                    <div class="chart-container"><canvas id="chartValorUsd"></canvas></div>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 20px;">Consolidado Histórico Mensual</h4>
+            <table id="tablaReporteMensual">
+                <thead>
+                    <tr>
+                        <th>Periodo</th>
+                        <th>N° Cargas</th>
+                        <th>N° Lotes</th>
+                        <th>P. Bruto Total (kg)</th>
+                        <th>P. Seco Total (kg)</th>
+                        <th>Est. Au (Oz)</th>
+                        <th>Valor Total (USD)</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 6. CONTROL MAESTRO GERENCIA -->
     <div id="secGerencia" class="seccion-app">
         <div class="card">
             <h3>📊 Control Maestro de Carbón y Valorización Financiera</h3>
-            <p style="font-size: 12px; color: #718096;">Vista consolidada exclusiva para Gerencia General.</p>
+            <p style="font-size: 12px; color: #718096; margin-bottom: 20px;">Vista consolidada exclusiva para Gerencia General.</p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                <div style="background: #2b6cb0; color: white; padding: 18px; border-radius: 8px; text-align: center;">
+                    <h4 style="font-size: 12px; text-transform: uppercase;">Kg Seco Stock Físico</h4>
+                    <p id="kpiKgSeco" style="font-size: 22px; font-weight: bold; margin-top: 6px;">0.00 kg</p>
+                </div>
+                <div style="background: #2b6cb0; color: white; padding: 18px; border-radius: 8px; text-align: center;">
+                    <h4 style="font-size: 12px; text-transform: uppercase;">Onzas Au Disponibles</h4>
+                    <p id="kpiOzAu" style="font-size: 22px; font-weight: bold; margin-top: 6px;">0.00 Oz</p>
+                </div>
+                <div style="background: #2b6cb0; color: white; padding: 18px; border-radius: 8px; text-align: center;">
+                    <h4 style="font-size: 12px; text-transform: uppercase;">Valor Au (USD)</h4>
+                    <p id="kpiValorAu" style="font-size: 22px; font-weight: bold; margin-top: 6px;">$0.00</p>
+                </div>
+                <div style="background: #2d3748; color: white; padding: 18px; border-radius: 8px; text-align: center;">
+                    <h4 style="font-size: 12px; text-transform: uppercase;">Valor Total Disponible</h4>
+                    <p id="kpiValorTotal" style="font-size: 22px; font-weight: bold; margin-top: 6px;">$0.00</p>
+                </div>
+            </div>
+
+            <table id="tablaGerencia">
+                <thead>
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Lote</th>
+                        <th>P. Bruto (kg)</th>
+                        <th>P. Seco (kg)</th>
+                        <th>Au (Oz)</th>
+                        <th>Valor Au (USD)</th>
+                        <th>Ag (Oz)</th>
+                        <th>Valor Ag (USD)</th>
+                        <th>Valor Total (USD)</th>
+                        <th>Estatus</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
@@ -382,7 +514,54 @@
             cargarCarbonDesorbido();
         }
 
+        if (id === 'secGerencia') {
+            cargarControlMaestroGerencia();
+        }
+
         if (btn) btn.classList.add('active');
+    }
+
+    async function cargarControlMaestroGerencia() {
+        try {
+            const res = await fetch(`${API_URL}/api/gerencia/control-maestro`, {
+                headers: { 'x-rol-usuario': usuarioSesion.rol }
+            });
+            const r = await res.json();
+            if (r.success) {
+                let totalKgSeco = 0, totalOzAu = 0, totalValorAu = 0, totalValorGral = 0;
+                const tbody = document.querySelector('#tablaGerencia tbody');
+                tbody.innerHTML = '';
+
+                r.data.forEach(row => {
+                    totalKgSeco += parseFloat(row.peso_seco_neto || 0);
+                    totalOzAu += parseFloat(row.au_oz || 0);
+                    totalValorAu += parseFloat(row.valor_au_usd || 0);
+                    totalValorGral += parseFloat(row.valor_total_usd || 0);
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b>${row.proveedor}</b></td>
+                            <td>${row.codigo_lote}</td>
+                            <td>${parseFloat(row.peso_bruto).toFixed(2)} kg</td>
+                            <td>${parseFloat(row.peso_seco_neto).toFixed(2)} kg</td>
+                            <td>${parseFloat(row.au_oz || 0).toFixed(2)}</td>
+                            <td>$${parseFloat(row.valor_au_usd || 0).toFixed(2)}</td>
+                            <td>${parseFloat(row.ag_oz || 0).toFixed(2)}</td>
+                            <td>$${parseFloat(row.valor_ag_usd || 0).toFixed(2)}</td>
+                            <td><b>$${parseFloat(row.valor_total_usd || 0).toFixed(2)}</b></td>
+                            <td><span class="badge">${row.estatus}</span></td>
+                        </tr>
+                    `;
+                });
+
+                document.getElementById('kpiKgSeco').innerText = `${totalKgSeco.toFixed(2)} kg`;
+                document.getElementById('kpiOzAu').innerText = `${totalOzAu.toFixed(2)} Oz`;
+                document.getElementById('kpiValorAu').innerText = `$${totalValorAu.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+                document.getElementById('kpiValorTotal').innerText = `$${totalValorGral.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
+            }
+        } catch (err) {
+            console.error('Error al cargar reporte maestro:', err);
+        }
     }
 
     async function cargarReporteMensual() {
