@@ -17,7 +17,7 @@
         .login-box { background: white; padding: 35px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; }
         .logo-login { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e0; }
 
-        /* NAVEGACIÓN LATERAL RETRÁCTIL (HOVER CON DESPLIEGUE) */
+        /* NAVEGACIÓN LATERAL RETRÁCTIL */
         .sidebar { 
             width: 70px; 
             background: #1a202c; 
@@ -48,14 +48,16 @@
             white-space: nowrap; 
             opacity: 0; 
             transition: opacity 0.2s ease; 
+            color: white;
         }
         .sidebar:hover .sidebar-title { opacity: 1; }
 
         .menu-items { margin-top: 25px; display: flex; flex-direction: column; gap: 8px; }
         
+        /* OPCIONES DEL MENÚ (TODAS CON TEXTO BLANCO) */
         .nav-btn { 
             background: transparent; 
-            color: #a0aec0; 
+            color: #ffffff; 
             border: none; 
             padding: 12px 10px; 
             width: 100%; 
@@ -71,11 +73,11 @@
             white-space: nowrap;
         }
 
-        .nav-btn .icon { font-size: 18px; min-width: 30px; text-align: center; }
-        .nav-btn .text-btn { opacity: 0; transition: opacity 0.2s ease; }
+        .nav-btn .icon { font-size: 18px; min-width: 30px; text-align: center; color: #ffffff; }
+        .nav-btn .text-btn { opacity: 0; transition: opacity 0.2s ease; color: #ffffff; }
         .sidebar:hover .nav-btn .text-btn { opacity: 1; }
 
-        .nav-btn:hover, .nav-btn.active { background: #2d3748; color: white; }
+        .nav-btn:hover, .nav-btn.active { background: #2d3748; color: #ffffff; }
 
         .sidebar-bottom { 
             border-top: 1px solid #2d3748; 
@@ -86,13 +88,18 @@
         }
         .sidebar:hover .sidebar-bottom { opacity: 1; }
 
-        /* ÁREA PRINCIPAL */
+        /* CONTENIDO PRINCIPAL ADAPTATIVO */
         .main-content { 
             margin-left: 70px; 
             flex: 1; 
             padding: 30px; 
-            max-width: calc(100vw - 70px); 
-            transition: margin-left 0.3s;
+            width: calc(100vw - 70px); 
+            transition: margin-left 0.3s ease, width 0.3s ease;
+        }
+
+        .sidebar:hover ~ .main-content {
+            margin-left: 250px;
+            width: calc(100vw - 250px);
         }
 
         .card { background: white; padding: 22px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
@@ -142,7 +149,7 @@
     </div>
 </div>
 
-<!-- BARRA LATERAL DESPLEGABLE -->
+<!-- BARRA LATERAL DESPLEGABLE CON HOVER -->
 <div id="sidebarApp" class="sidebar" style="display: none;">
     <div class="sidebar-top">
         <img src="logo.jpeg" alt="Logo" class="logo-sidebar">
@@ -160,15 +167,15 @@
                 <span class="icon">📋</span>
                 <span class="text-btn">Historial General</span>
             </button>
-            <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none; color: #319795;">
+            <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none;">
                 <span class="icon">🔄</span>
                 <span class="text-btn">Carbón Desorbido</span>
             </button>
-            <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none; color: #805ad5;">
+            <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none;">
                 <span class="icon">📈</span>
                 <span class="text-btn">Reportes Mensuales</span>
             </button>
-            <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none; color: #3182ce;">
+            <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none;">
                 <span class="icon">📊</span>
                 <span class="text-btn">Control Maestro</span>
             </button>
@@ -176,7 +183,7 @@
     </div>
     <div class="sidebar-bottom">
         <p style="font-size: 11px; color: #a0aec0;">Usuario:</p>
-        <b id="lblNombreUsuario" style="font-size: 12px;"></b><br>
+        <b id="lblNombreUsuario" style="font-size: 12px; color: white;"></b><br>
         <span id="lblRolUsuario" class="badge" style="margin-top: 4px; display: inline-block;"></span>
         <button onclick="cerrarSesion()" class="btn-peligro" style="width: 100%; margin-top: 12px; padding: 6px; font-size: 11px;">Cerrar Sesión</button>
     </div>
