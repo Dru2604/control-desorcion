@@ -61,18 +61,27 @@ app.get('/api/cargas', async (req, res) => {
   }
 });
 
-// 3. REGISTRAR NUEVA CARGA (Muestras en Gramos -> Convierte a Kg)
+// 3. REGISTRAR NUEVA CARGA (Acepta fecha de operación personalizada)
 app.post('/api/cargas', async (req, res) => {
-  const { codigo_carga, proveedor, usuario_registro, lotes } = req.body;
+  const { codigo_carga, proveedor, usuario_registro, fecha_operacion, lotes } = req.body;
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
 
-    const resCarga = await client.query(
-      'INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado) VALUES ($1, $2, $3, $4) RETURNING id',
-      [codigo_carga, proveedor, usuario_registro, 'Por Liquidar']
-    );
+    let resCarga;
+    if (fecha_operacion) {
+      resCarga = await client.query(
+        'INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado, fecha) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+        [codigo_carga, proveedor, usuario_registro, 'Por Liquidar', fecha_operacion]
+      );
+    } else {
+      resCarga = await client.query(
+        'INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado) VALUES ($1, $2, $3, $4) RETURNING id',
+        [codigo_carga, proveedor, usuario_registro, 'Por Liquidar']
+      );
+    }
+
     const cargaId = resCarga.rows[0].id;
 
     for (let lote of lotes) {
@@ -262,7 +271,7 @@ app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => 
         ((((l.peso_seco_neto * l.ley_au_g_kg) / $1) * $2) + (((l.peso_seco_neto * l.ley_ag_g_kg) / $1) * $3)) AS valor_total_usd
       FROM cargas c
       JOIN lotes l ON c.id = l.carga_id
-      ORDER BY c.proveedor ASC, l.codigo_lote ASC;
+      ORDER BY c.fecha DESC, c.proveedor ASC, l.codigo_lote ASC;
     `;
 
     const { rows } = await pool.query(query, [factor, precioAu, precioAg]);
