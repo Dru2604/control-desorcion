@@ -17,7 +17,7 @@
         .login-box { background: white; padding: 35px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; }
         .logo-login { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e0; }
 
-        /* NAVEGACIÓN LATERAL RETRÁCTIL MEJORADA */
+        /* NAVEGACIÓN LATERAL RETRÁCTIL */
         .sidebar { 
             width: 70px; 
             background: #1a202c; 
@@ -78,7 +78,7 @@
 
         .nav-btn:hover, .nav-btn.active { background: #2d3748; color: #ffffff; }
 
-        /* SECCIÓN INFERIOR DE USUARIO Y PERFIL LIMPIA */
+        /* SECCIÓN INFERIOR DE PERFIL */
         .sidebar-bottom { 
             border-top: 1px solid #2d3748; 
             padding-top: 12px; 
@@ -255,7 +255,11 @@
 
                 <div id="contenedorLotes" style="background: #f7fafc; padding: 15px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
                     <h4>Lotes Pertenecientes a esta Carga</h4>
-                    <div class="lote-item card" style="margin-top: 10px;">
+                    <div class="lote-item card" style="margin-top: 10px; position: relative;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-size: 12px; font-weight: bold; color: #4a5568;">Lote #1</span>
+                            <button type="button" class="btn-peligro" onclick="eliminarLote(this)" style="padding: 4px 8px; font-size: 11px;">🗑️ Eliminar Lote</button>
+                        </div>
                         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                             <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required placeholder="LOTE-01"></div>
                             <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" required></div>
@@ -579,6 +583,123 @@
         if (btn) btn.classList.add('active');
     }
 
+    function generarCamposMuestras(btn) {
+        const parent = btn.closest('.lote-item');
+        const cantidad = parseInt(parent.querySelector('.l-cant-muestras').value);
+        const cont = parent.querySelector('.contenedor-campos-muestras');
+
+        if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida de muestras.');
+
+        cont.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 5px;"></div>';
+        const grid = cont.querySelector('div');
+
+        for (let i = 1; i <= cantidad; i++) {
+            grid.innerHTML += `
+                <div>
+                    <label style="font-size: 11px;">Muestra #${i} (g):</label>
+                    <input type="number" step="0.01" class="peso-muestra-val" required placeholder="45.00">
+                </div>
+            `;
+        }
+    }
+
+    function agregarCampoLote() {
+        const cont = document.getElementById('contenedorLotes');
+        const numLote = cont.querySelectorAll('.lote-item').length + 1;
+        const div = document.createElement('div');
+        div.className = 'lote-item card';
+        div.style.marginTop = '10px';
+        div.style.position = 'relative';
+        div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-size: 12px; font-weight: bold; color: #4a5568;">Lote #${numLote}</span>
+                <button type="button" class="btn-peligro" onclick="eliminarLote(this)" style="padding: 4px 8px; font-size: 11px;">🗑️ Eliminar Lote</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required placeholder="LOTE-0${numLote}"></div>
+                <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" required></div>
+                <div><label>Tara (kg):</label><input type="number" step="0.01" class="l-tara" required></div>
+                <div><label>Humedad (%):</label><input type="number" step="0.01" class="l-humedad" required></div>
+            </div>
+            <div style="margin-top: 15px; background: #edf2f7; padding: 10px; border-radius: 6px;">
+                <div style="display: flex; gap: 10px; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label>¿Cuántas muestras son para este lote?:</label>
+                        <input type="number" class="l-cant-muestras" min="1" placeholder="Ej: 3">
+                    </div>
+                    <button type="button" class="btn-secundario" onclick="generarCamposMuestras(this)">Generar Campos de Muestras</button>
+                </div>
+                <div class="contenedor-campos-muestras" style="margin-top: 10px;"></div>
+            </div>
+        `;
+        cont.appendChild(div);
+    }
+
+    function eliminarLote(btn) {
+        const lotes = document.querySelectorAll('.lote-item');
+        if (lotes.length <= 1) {
+            alert('Debe existir al menos un lote para registrar la carga.');
+            return;
+        }
+        const loteCard = btn.closest('.lote-item');
+        loteCard.remove();
+    }
+
+    document.getElementById('formCarga').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btnGuardar = document.getElementById('btnGuardar');
+        btnGuardar.disabled = true;
+        btnGuardar.innerText = 'Guardando...';
+
+        const codigo_carga = document.getElementById('codigo_carga').value;
+        const proveedor = document.getElementById('proveedor').value;
+
+        const lotesElems = document.querySelectorAll('.lote-item');
+        const lotes = [];
+
+        for (let el of lotesElems) {
+            const inputsMuestras = el.querySelectorAll('.peso-muestra-val');
+            if (inputsMuestras.length === 0) {
+                alert('Genera y llena los pesos de muestras para cada lote.');
+                btnGuardar.disabled = false;
+                btnGuardar.innerText = 'Guardar Carga Completa';
+                return;
+            }
+
+            lotes.push({
+                codigo_lote: el.querySelector('.l-codigo').value,
+                peso_bruto: parseFloat(el.querySelector('.l-bruto').value),
+                tara: parseFloat(el.querySelector('.l-tara').value),
+                porcentaje_humedad: parseFloat(el.querySelector('.l-humedad').value),
+                pesos_muestras: Array.from(inputsMuestras).map(i => parseFloat(i.value) || 0)
+            });
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/api/cargas`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, lotes })
+            });
+
+            const r = await res.json();
+            if (r.success) {
+                alert('Carga guardada exitosamente.');
+                document.getElementById('formCarga').reset();
+                document.querySelectorAll('.contenedor-campos-muestras').forEach(c => c.innerHTML = '');
+                cargarCargas();
+                mostrarSeccion('secHistorial');
+            } else {
+                alert(r.error || 'Error al guardar.');
+            }
+        } catch (err) {
+            alert('Error de conexión al guardar.');
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerText = 'Guardar Carga Completa';
+        }
+    });
+
     async function cargarControlMaestroGerencia() {
         try {
             const res = await fetch(`${API_URL}/api/gerencia/control-maestro`, {
@@ -700,108 +821,6 @@
             pdf.save("Reporte_Ejecutivo_Mensual.pdf");
         });
     }
-
-    function generarCamposMuestras(btn) {
-        const parent = btn.closest('.lote-item');
-        const cantidad = parseInt(parent.querySelector('.l-cant-muestras').value);
-        const cont = parent.querySelector('.contenedor-campos-muestras');
-
-        if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida de muestras.');
-
-        cont.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 5px;"></div>';
-        const grid = cont.querySelector('div');
-
-        for (let i = 1; i <= cantidad; i++) {
-            grid.innerHTML += `
-                <div>
-                    <label style="font-size: 11px;">Muestra #${i} (g):</label>
-                    <input type="number" step="0.01" class="peso-muestra-val" required placeholder="45.00">
-                </div>
-            `;
-        }
-    }
-
-    function agregarCampoLote() {
-        const cont = document.getElementById('contenedorLotes');
-        const numLote = cont.querySelectorAll('.lote-item').length + 1;
-        const div = document.createElement('div');
-        div.className = 'lote-item card';
-        div.style.marginTop = '10px';
-        div.innerHTML = `
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required placeholder="LOTE-0${numLote}"></div>
-                <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" required></div>
-                <div><label>Tara (kg):</label><input type="number" step="0.01" class="l-tara" required></div>
-                <div><label>Humedad (%):</label><input type="number" step="0.01" class="l-humedad" required></div>
-            </div>
-            <div style="margin-top: 15px; background: #edf2f7; padding: 10px; border-radius: 6px;">
-                <div style="display: flex; gap: 10px; align-items: flex-end;">
-                    <div style="flex: 1;">
-                        <label>¿Cuántas muestras son para este lote?:</label>
-                        <input type="number" class="l-cant-muestras" min="1" placeholder="Ej: 3">
-                    </div>
-                    <button type="button" class="btn-secundario" onclick="generarCamposMuestras(this)">Generar Campos de Muestras</button>
-                </div>
-                <div class="contenedor-campos-muestras" style="margin-top: 10px;"></div>
-            </div>
-        `;
-        cont.appendChild(div);
-    }
-
-    document.getElementById('formCarga').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const btnGuardar = document.getElementById('btnGuardar');
-        btnGuardar.disabled = true;
-        btnGuardar.innerText = 'Guardando...';
-
-        const codigo_carga = document.getElementById('codigo_carga').value;
-        const proveedor = document.getElementById('proveedor').value;
-
-        const lotesElems = document.querySelectorAll('.lote-item');
-        const lotes = [];
-
-        for (let el of lotesElems) {
-            const inputsMuestras = el.querySelectorAll('.peso-muestra-val');
-            if (inputsMuestras.length === 0) {
-                alert('Genera y llena los pesos de muestras para cada lote.');
-                btnGuardar.disabled = false;
-                btnGuardar.innerText = 'Guardar Carga Completa';
-                return;
-            }
-
-            lotes.push({
-                codigo_lote: el.querySelector('.l-codigo').value,
-                peso_bruto: parseFloat(el.querySelector('.l-bruto').value),
-                tara: parseFloat(el.querySelector('.l-tara').value),
-                porcentaje_humedad: parseFloat(el.querySelector('.l-humedad').value),
-                pesos_muestras: Array.from(inputsMuestras).map(i => parseFloat(i.value) || 0)
-            });
-        }
-
-        try {
-            const res = await fetch(`${API_URL}/api/cargas`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, lotes })
-            });
-
-            const r = await res.json();
-            if (r.success) {
-                alert('Carga guardada exitosamente.');
-                document.getElementById('formCarga').reset();
-                document.querySelectorAll('.contenedor-campos-muestras').forEach(c => c.innerHTML = '');
-                cargarCargas();
-                mostrarSeccion('secHistorial');
-            } else {
-                alert(r.error || 'Error al guardar.');
-            }
-        } catch (err) {
-            alert('Error de conexión al guardar.');
-        } finally {
-            btnGuardar.disabled = false;
-            btnGuardar.innerText = 'Guardar Carga Completa';
-        }
-    });
 
     async function cargarCargas() {
         const res = await fetch(`${API_URL}/api/cargas`);
