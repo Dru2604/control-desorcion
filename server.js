@@ -110,13 +110,13 @@ app.post('/api/cargas', async (req, res) => {
           lote.codigo_lote,
           pesoBruto,
           tara,
-          pesoMuestrasKg.toFixed(3), // Se guarda el total acumulado descontado en kg con 3 decimales
+          pesoMuestrasKg.toFixed(3),
           cantidadMuestras,
           pesoNetoHumedo.toFixed(2),
           porcentajeHumedad,
           descuentoHumedadKg.toFixed(2),
           pesoSecoNeto.toFixed(2),
-          JSON.stringify(arrayMuestrasGramos), // Se conservan los valores individuales ingresados en gramos
+          JSON.stringify(arrayMuestrasGramos),
           Number(lote.ley_au_g_kg) || 0,
           Number(lote.ley_ag_g_kg) || 0,
           lote.embalaje || 'SACOS',
@@ -169,6 +169,72 @@ app.delete('/api/cargas', async (req, res) => {
   } catch (err) {
     console.error('Error al borrar historial:', err);
     res.status(500).json({ success: false, error: 'Error al vaciar la base de datos.' });
+  }
+});
+
+// ==========================================
+// MÓDULO: CARBÓN DESORBIDO Y MOVIMIENTOS
+// ==========================================
+
+// Endpoint: Obtener historial de movimientos de carbón desorbido y lotes pendientes de devolución
+app.get('/api/carbon-desorbido', async (req, res) => {
+  try {
+    const movimientosResult = await pool.query('SELECT * FROM inventario_carbon_desorbido ORDER BY fecha DESC');
+    
+    // Consulta lotes procesados cuyo carbón no ha sido devuelto aún al cliente
+    const pendientesResult = await pool.query(`
+      SELECT 
+        l.id AS lote_id,
+        c.proveedor, 
+        l.codigo_lote, 
+        l.peso_seco_neto,
+        l.ubicacion_fisica
+      FROM cargas c 
+      JOIN lotes l ON c.id = l.carga_id 
+      WHERE l.devuelto_al_cliente = FALSE OR l.devuelto_al_cliente IS NULL
+      ORDER BY c.proveedor ASC, l.codigo_lote ASC
+    `);
+
+    res.json({ 
+      success: true, 
+      movimientos: movimientosResult.rows, 
+      pendientesDevolucion: pendientesResult.rows 
+    });
+  } catch (err) {
+    console.error('Error en /api/carbon-desorbido:', err);
+    res.status(500).json({ success: false, error: 'Error al consultar inventario de carbón desorbido.' });
+  }
+});
+
+// Endpoint: Registrar movimiento de carbón (Retorno desorción, Devolución cliente, Venta/Préstamo virgen)
+app.post('/api/carbon-desorbido', async (req, res) => {
+  const { tipo_movimiento, proveedor, codigo_lote, peso_seco_kg, observaciones, usuario_registro, lote_id } = req.body;
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Registra la entrada/salida en la tabla de inventario
+    await client.query(
+      `INSERT INTO inventario_carbon_desorbido 
+        (tipo_movimiento, proveedor, codigo_lote, peso_seco_kg, observaciones, usuario_registro)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [tipo_movimiento, proveedor, codigo_lote, Number(peso_seco_kg) || 0, observaciones || '', usuario_registro]
+    );
+
+    // Si la acción es entregar al cliente, marcar el lote como devuelto en la tabla principal
+    if (tipo_movimiento === 'DEVOLUCION_CLIENTE' && lote_id) {
+      await client.query('UPDATE lotes SET devuelto_al_cliente = TRUE, ubicacion_fisica = $1 WHERE id = $2', ['Devuelto a Cliente', lote_id]);
+    }
+
+    await client.query('COMMIT');
+    res.json({ success: true });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error al registrar movimiento de carbón:', err);
+    res.status(500).json({ success: false, error: 'Error interno al registrar el movimiento.' });
+  } finally {
+    client.release();
   }
 });
 
