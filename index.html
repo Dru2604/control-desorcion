@@ -248,9 +248,10 @@
         <div class="card">
             <h3>📦 Registrar Nueva Carga y Lotes</h3>
             <form id="formCarga">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px;">
                     <div class="campo"><label>Código de Operación:</label><input type="text" id="codigo_carga" required placeholder="Ej: OPS-2026-XXX-XXX"></div>
                     <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="proveedor" required placeholder="Ej: Minera El Sur"></div>
+                    <div class="campo"><label>Fecha de Operación (Opcional):</label><input type="date" id="fecha_operacion"></div>
                 </div>
 
                 <div id="contenedorLotes" style="background: #f7fafc; padding: 15px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
@@ -653,6 +654,7 @@
 
         const codigo_carga = document.getElementById('codigo_carga').value;
         const proveedor = document.getElementById('proveedor').value;
+        const fecha_operacion = document.getElementById('fecha_operacion').value;
 
         const lotesElems = document.querySelectorAll('.lote-item');
         const lotes = [];
@@ -679,7 +681,7 @@
             const res = await fetch(`${API_URL}/api/cargas`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, lotes })
+                body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, fecha_operacion, lotes })
             });
 
             const r = await res.json();
