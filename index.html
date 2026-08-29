@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Sistema de Control de Desorción</title>
+    <!-- Librerías Externas para Gráficos y Exportación -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background: #f0f2f5; color: #1c1e21; display: flex; min-height: 100vh; }
@@ -26,7 +32,7 @@
 
         .campo { margin-bottom: 12px; text-align: left; }
         label { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #4a5568; }
-        input, select, textarea { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
+        input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
         button { background: #3182ce; color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px; }
         button:hover { background: #2b6cb0; }
         .btn-secundario { background: #718096; font-size: 12px; }
@@ -36,14 +42,9 @@
         table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 10px; }
         th, td { padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0; }
         th { background: #2d3748; color: white; }
-        .fila-carga { background: #f7fafc; font-weight: bold; }
-        .detalles-lotes { background: #edf2f7; display: none; }
         .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
 
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
-        .kpi-card { background: #2b6cb0; color: white; padding: 18px; border-radius: 8px; text-align: center; }
-        .kpi-card h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; opacity: 0.9; }
-        .kpi-card p { font-size: 22px; font-weight: bold; margin-top: 6px; }
+        .chart-container { position: relative; height: 320px; width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -77,9 +78,8 @@
             <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)">📝 Registrar Carga</button>
             <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)">🔍 Buscar y Filtrar</button>
             <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)">📋 Historial General</button>
-            
-            <!-- EXCLUSIVO PARA GERENCIA Y ADMINISTRACIÓN -->
             <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none; background: #319795; color: white;">🔄 Carbón Desorbido</button>
+            <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none; background: #805ad5; color: white;">📈 Reportes Mensuales</button>
             <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none; background: #2b6cb0; color: white;">📊 Control Maestro</button>
         </div>
     </div>
@@ -93,7 +93,6 @@
 
 <div id="mainApp" class="main-content" style="display: none;">
 
-    <!-- SECCIÓN 1: REGISTRAR CARGA -->
     <div id="secNuevo" class="seccion-app active">
         <div class="card">
             <h3>📦 Registrar Nueva Carga y Lotes</h3>
@@ -133,7 +132,6 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 2: BUSCAR Y FILTRAR -->
     <div id="secBuscar" class="seccion-app">
         <div class="card">
             <h3>🔍 Motor de Búsqueda y Filtros</h3>
@@ -158,7 +156,6 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 3: HISTORIAL GENERAL -->
     <div id="secHistorial" class="seccion-app">
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -183,69 +180,42 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 4: CARBÓN DESORBIDO Y MOVIMIENTOS (ADMIN Y GERENCIA) -->
-    <div id="secDesorcion" class="seccion-app">
-        <div class="card">
-            <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
-            <p style="font-size: 12px; color: #718096; margin-bottom: 20px;">Modulo exclusivo para Administración y Gerencia.</p>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
-                <div style="background: #e6fffa; padding: 15px; border-radius: 8px; border: 1fr solid #319795;">
-                    <h4>➕ Entrada: Carbón Desorbido de Planta</h4>
-                    <p style="font-size: 11px; color: #2d3748; margin-bottom: 10px;">Carbón sin oro retornado de la planta de desorción listo para devolución.</p>
-                    <form id="formRetornoPlant">
-                        <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="retProveedor" required placeholder="Ej: Minera El Sur"></div>
-                        <div class="campo"><label>Código de Lote:</label><input type="text" id="retLote" required placeholder="Ej: LOTE-01"></div>
-                        <div class="campo"><label>Peso Seco Retornado (kg):</label><input type="number" step="0.01" id="retPeso" required placeholder="Ej: 2000.00"></div>
-                        <div class="campo"><label>Observaciones:</label><input type="text" id="retObs" placeholder="Ej: Retorno de planta estéril"></div>
-                        <button type="submit" class="btn-exito" style="width: 100%;">Registrar Ingreso de Desorción</button>
-                    </form>
+    <!-- SECCIÓN 4: REPORTES MENSUALES CON GRÁFICOS (EXCLUSIVO ADMIN Y GERENCIA) -->
+    <div id="secReportes" class="seccion-app">
+        <div class="card" id="areaReporteImpresion">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <div>
+                    <h3>📈 Reporte Estadístico Mensual de Producción y Valorización</h3>
+                    <p style="font-size: 12px; color: #718096;">Módulo ejecutivo para reuniones de directorio.</p>
                 </div>
-
-                <div style="background: #fffaf0; padding: 15px; border-radius: 8px; border: 1fr solid #dd6b20;">
-                    <h4>📤 Salida: Venta o Préstamo de Carbón Virgen</h4>
-                    <p style="font-size: 11px; color: #2d3748; margin-bottom: 10px;">Salidas de stock virgen a clientes/mineros.</p>
-                    <form id="formSalidaVirgen">
-                        <div class="campo">
-                            <label>Tipo de Operación:</label>
-                            <select id="virgenTipo" required>
-                                <option value="VENTA_VIRGEN">Venta de Carbón Virgen</option>
-                                <option value="PRESTAMO_VIRGEN">Préstamo de Carbón Virgen</option>
-                            </select>
-                        </div>
-                        <div class="campo"><label>Cliente / Minero:</label><input type="text" id="virgenCliente" required placeholder="Ej: Juan Pérez"></div>
-                        <div class="campo"><label>Cantidad (kg):</label><input type="number" step="0.01" id="virgenPeso" required placeholder="Ej: 500.00"></div>
-                        <div class="campo"><label>Detalles / Motivo:</label><input type="text" id="virgenObs" placeholder="Ej: Préstamo temporal"></div>
-                        <button type="submit" style="width: 100%; background: #dd6b20;">Registrar Salida de Virgen</button>
-                    </form>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="exportarExcel()" class="btn-exito">📗 Exportar a Excel</button>
+                    <button onclick="exportarPDF()" style="background: #e53e3e; color: white;">📕 Descargar PDF</button>
                 </div>
             </div>
 
-            <h4>📦 Lotes Procesados Pendientes de Devolución al Cliente</h4>
-            <table id="tablaPendientesDev">
-                <thead>
-                    <tr>
-                        <th>Proveedor</th>
-                        <th>Lote</th>
-                        <th>Peso Seco Neto (kg)</th>
-                        <th>Ubicación</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div class="card" style="border: 1px solid #e2e8f0;">
+                    <h4 style="font-size: 13px; text-align: center;">Kg Seco Procesados por Mes</h4>
+                    <div class="chart-container"><canvas id="chartKgSeco"></canvas></div>
+                </div>
+                <div class="card" style="border: 1px solid #e2e8f0;">
+                    <h4 style="font-size: 13px; text-align: center;">Valorización Total Estimada ($ USD)</h4>
+                    <div class="chart-container"><canvas id="chartValorUsd"></canvas></div>
+                </div>
+            </div>
 
-            <h4 style="margin-top: 25px;">📋 Historial de Movimientos de Carbón</h4>
-            <table id="tablaMovimientosCarbon">
+            <h4 style="margin-top: 20px;">Consolidado Histórico Mensual</h4>
+            <table id="tablaReporteMensual">
                 <thead>
                     <tr>
-                        <th>Fecha</th>
-                        <th>Tipo Movimiento</th>
-                        <th>Proveedor / Cliente</th>
-                        <th>Lote</th>
-                        <th>Peso Seco (kg)</th>
-                        <th>Observaciones</th>
-                        <th>Usuario</th>
+                        <th>Periodo</th>
+                        <th>N° Cargas</th>
+                        <th>N° Lotes</th>
+                        <th>P. Bruto Total (kg)</th>
+                        <th>P. Seco Total (kg)</th>
+                        <th>Est. Au (Oz)</th>
+                        <th>Valor Total (USD)</th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -253,48 +223,19 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 5: CONTROL MAESTRO DE GERENCIA -->
+    <!-- SECCIÓN 5: DESORCIÓN -->
+    <div id="secDesorcion" class="seccion-app">
+        <div class="card">
+            <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
+            <p style="font-size: 12px; color: #718096;">Módulo exclusivo para Administración y Gerencia.</p>
+        </div>
+    </div>
+
+    <!-- SECCIÓN 6: CONTROL MAESTRO -->
     <div id="secGerencia" class="seccion-app">
         <div class="card">
             <h3>📊 Control Maestro de Carbón y Valorización Financiera</h3>
-            <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Vista consolidada exclusiva para Gerencia General.</p>
-            
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <h4>Kg Seco Stock Físico</h4>
-                    <p id="kpiKgSeco">0.00 kg</p>
-                </div>
-                <div class="kpi-card">
-                    <h4>Onzas Au Disponibles</h4>
-                    <p id="kpiOzAu">0.00 Oz</p>
-                </div>
-                <div class="kpi-card">
-                    <h4>Valor Au (USD)</h4>
-                    <p id="kpiValorAu">$0.00</p>
-                </div>
-                <div class="kpi-card" style="background: #2d3748;">
-                    <h4>Valor Total Disponible</h4>
-                    <p id="kpiValorTotal">$0.00</p>
-                </div>
-            </div>
-
-            <table id="tablaGerencia">
-                <thead>
-                    <tr>
-                        <th>Proveedor</th>
-                        <th>Lote</th>
-                        <th>P. Bruto (kg)</th>
-                        <th>P. Seco (kg)</th>
-                        <th>Au (Oz)</th>
-                        <th>Valor Au (USD)</th>
-                        <th>Ag (Oz)</th>
-                        <th>Valor Ag (USD)</th>
-                        <th>Valor Total (USD)</th>
-                        <th>Estatus</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <p style="font-size: 12px; color: #718096;">Vista consolidada exclusiva para Gerencia General.</p>
         </div>
     </div>
 
@@ -304,6 +245,8 @@
     const API_URL = 'https://backend-desorcion.onrender.com';
     let usuarioSesion = null;
     let cargasGlobales = [];
+    let chartKgInstance = null;
+    let chartValorInstance = null;
 
     document.getElementById('formLogin').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -345,12 +288,12 @@
             document.getElementById('btnVaciar').style.display = 'block';
         }
 
-        // MOSTRAR OPCIÓN DE CARBÓN DESORBIDO SOLO A GERENCIA Y ADMINISTRACIÓN
+        // HABILITAR REPORTES Y DESORCIÓN SOLO PARA ADMIN Y GERENCIA
         if (usuarioSesion.rol === 'GERENCIA' || usuarioSesion.rol === 'ADMIN') {
             document.getElementById('btnMenuDesorcion').style.display = 'flex';
+            document.getElementById('btnMenuReportes').style.display = 'flex';
         }
 
-        // MOSTRAR CONTROL MAESTRO SOLO A GERENCIA
         if (usuarioSesion.rol === 'GERENCIA') {
             document.getElementById('btnMenuGerencia').style.display = 'flex';
         }
@@ -372,15 +315,95 @@
             document.getElementById('secHistorial').classList.add('active');
         }
         
-        if (id === 'secDesorcion') {
-            cargarCarbonDesorbido();
-        }
-
-        if (id === 'secGerencia') {
-            cargarControlMaestroGerencia();
+        if (id === 'secReportes') {
+            cargarReporteMensual();
         }
 
         if (btn) btn.classList.add('active');
+    }
+
+    // CARGAR Y RENDERIZAR GRÁFICOS DEL REPORTE MENSUAL
+    async function cargarReporteMensual() {
+        try {
+            const res = await fetch(`${API_URL}/api/reportes/mensual`, {
+                headers: { 'x-rol-usuario': usuarioSesion.rol }
+            });
+            const r = await res.json();
+            if (r.success) {
+                const data = r.data;
+                const tbody = document.querySelector('#tablaReporteMensual tbody');
+                tbody.innerHTML = '';
+
+                const periodos = [];
+                const kgSecos = [];
+                const valoresUsd = [];
+
+                data.forEach(row => {
+                    periodos.push(row.periodo);
+                    kgSecos.push(parseFloat(row.peso_seco_total).toFixed(2));
+                    valoresUsd.push(parseFloat(row.valor_usd_total).toFixed(2));
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><b>${row.mes_nombre || row.periodo}</b></td>
+                            <td>${row.total_cargas}</td>
+                            <td>${row.total_lotes}</td>
+                            <td>${parseFloat(row.peso_bruto_total).toFixed(2)} kg</td>
+                            <td><b>${parseFloat(row.peso_seco_total).toFixed(2)} kg</b></td>
+                            <td>${parseFloat(row.au_oz_total).toFixed(2)} Oz</td>
+                            <td><b>$${parseFloat(row.valor_usd_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</b></td>
+                        </tr>
+                    `;
+                });
+
+                // Renderizar Gráfico de Kg Secos
+                const ctxKg = document.getElementById('chartKgSeco').getContext('2d');
+                if (chartKgInstance) chartKgInstance.destroy();
+                chartKgInstance = new Chart(ctxKg, {
+                    type: 'bar',
+                    data: {
+                        labels: periodos.reverse(),
+                        datasets: [{ label: 'Kg Secos', data: kgSecos.reverse(), backgroundColor: '#3182ce' }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+
+                // Renderizar Gráfico de Valorización USD
+                const ctxUsd = document.getElementById('chartValorUsd').getContext('2d');
+                if (chartValorInstance) chartValorInstance.destroy();
+                chartValorInstance = new Chart(ctxUsd, {
+                    type: 'line',
+                    data: {
+                        labels: periodos,
+                        datasets: [{ label: 'Valor USD ($)', data: valoresUsd.reverse(), borderColor: '#38a169', fill: false }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        } catch (err) {
+            console.error('Error al cargar reporte mensual:', err);
+        }
+    }
+
+    // EXPORTAR TABLA A EXCEL
+    function exportarExcel() {
+        const tabla = document.getElementById('tablaReporteMensual');
+        const wb = XLSX.utils.table_to_book(tabla, { sheet: "Reporte Mensual" });
+        XLSX.writeFile(wb, "Reporte_Mensual_Desorcion.xlsx");
+    }
+
+    // EXPORTAR PANTALLA Y GRÁFICOS A PDF
+    function exportarPDF() {
+        const element = document.getElementById('areaReporteImpresion');
+        html2canvas(element).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgWidth = 190;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+            pdf.save("Reporte_Ejecutivo_Mensual.pdf");
+        });
     }
 
     function generarCamposMuestras(btn) {
@@ -550,221 +573,6 @@
                 </tr>
             `;
         });
-    }
-
-    // GESTIÓN DE CARBÓN DESORBIDO
-    async function cargarCarbonDesorbido() {
-        try {
-            const res = await fetch(`${API_URL}/api/carbon-desorbido`);
-            const r = await res.json();
-            if (r.success) {
-                // Renderizar Tabla de pendientes de devolución
-                const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
-                tbodyPend.innerHTML = '';
-                r.pendientesDevolucion.forEach(p => {
-                    tbodyPend.innerHTML += `
-                        <tr>
-                            <td><b>${p.proveedor}</b></td>
-                            <td>${p.codigo_lote}</td>
-                            <td><b>${p.peso_seco_neto} kg</b></td>
-                            <td>${p.ubicacion_fisica}</td>
-                            <td><button onclick="entregarLoteCliente('${p.lote_id}', '${p.proveedor}', '${p.codigo_lote}', '${p.peso_seco_neto}')" class="btn-exito">Entregar al Cliente</button></td>
-                        </tr>
-                    `;
-                });
-
-                // Renderizar Historial de movimientos
-                const tbodyMov = document.querySelector('#tablaMovimientosCarbon tbody');
-                tbodyMov.innerHTML = '';
-                r.movimientos.forEach(m => {
-                    tbodyMov.innerHTML += `
-                        <tr>
-                            <td>${new Date(m.fecha).toLocaleString()}</td>
-                            <td><b>${m.tipo_movimiento}</b></td>
-                            <td>${m.proveedor}</td>
-                            <td>${m.codigo_lote || '-'}</td>
-                            <td>${m.peso_seco_kg} kg</td>
-                            <td>${m.observaciones || '-'}</td>
-                            <td>${m.usuario_registro}</td>
-                        </tr>
-                    `;
-                });
-            }
-        } catch (err) {
-            console.error('Error al cargar movimientos de carbón:', err);
-        }
-    }
-
-    // Registrar Entrada de Planta
-    document.getElementById('formRetornoPlant').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const proveedor = document.getElementById('retProveedor').value;
-        const codigo_lote = document.getElementById('retLote').value;
-        const peso_seco_kg = parseFloat(document.getElementById('retPeso').value);
-        const observaciones = document.getElementById('retObs').value;
-
-        const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tipo_movimiento: 'RETORNO_DESORCION',
-                proveedor,
-                codigo_lote,
-                peso_seco_kg,
-                observaciones,
-                usuario_registro: usuarioSesion.usuario
-            })
-        });
-        const r = await res.json();
-        if (r.success) {
-            alert('Ingreso de desorción registrado.');
-            document.getElementById('formRetornoPlant').reset();
-            cargarCarbonDesorbido();
-        }
-    });
-
-    // Registrar Salida Virgen (Venta/Préstamo)
-    document.getElementById('formSalidaVirgen').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const tipo_movimiento = document.getElementById('virgenTipo').value;
-        const proveedor = document.getElementById('virgenCliente').value;
-        const peso_seco_kg = parseFloat(document.getElementById('virgenPeso').value);
-        const observaciones = document.getElementById('virgenObs').value;
-
-        const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tipo_movimiento,
-                proveedor,
-                codigo_lote: 'VIRGEN-STOCK',
-                peso_seco_kg,
-                observaciones,
-                usuario_registro: usuarioSesion.usuario
-            })
-        });
-        const r = await res.json();
-        if (r.success) {
-            alert('Movimiento de carbón virgen registrado.');
-            document.getElementById('formSalidaVirgen').reset();
-            cargarCarbonDesorbido();
-        }
-    });
-
-    // Entregar Lote Procesado al Cliente
-    async function entregarLoteCliente(lote_id, proveedor, codigo_lote, peso_seco_kg) {
-        if (!confirm(`¿Confirmar entrega de ${peso_seco_kg} kg de carbón desorbido al cliente ${proveedor}?`)) return;
-
-        const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                tipo_movimiento: 'DEVOLUCION_CLIENTE',
-                proveedor,
-                codigo_lote,
-                peso_seco_kg,
-                observaciones: 'Devolución de carbón estéril posdesorción',
-                usuario_registro: usuarioSesion.usuario,
-                lote_id
-            })
-        });
-        const r = await res.json();
-        if (r.success) {
-            alert('Carbón devuelto exitosamente al cliente.');
-            cargarCarbonDesorbido();
-        }
-    }
-
-    async function cargarControlMaestroGerencia() {
-        try {
-            const res = await fetch(`${API_URL}/api/gerencia/control-maestro`, {
-                headers: { 'x-rol-usuario': usuarioSesion.rol }
-            });
-            const r = await res.json();
-            if (r.success) {
-                let totalKgSeco = 0, totalOzAu = 0, totalValorAu = 0, totalValorGral = 0;
-                const tbody = document.querySelector('#tablaGerencia tbody');
-                tbody.innerHTML = '';
-
-                r.data.forEach(row => {
-                    totalKgSeco += parseFloat(row.peso_seco_neto || 0);
-                    totalOzAu += parseFloat(row.au_oz || 0);
-                    totalValorAu += parseFloat(row.valor_au_usd || 0);
-                    totalValorGral += parseFloat(row.valor_total_usd || 0);
-
-                    tbody.innerHTML += `
-                        <tr>
-                            <td><b>${row.proveedor}</b></td>
-                            <td>${row.codigo_lote}</td>
-                            <td>${parseFloat(row.peso_bruto).toFixed(2)} kg</td>
-                            <td>${parseFloat(row.peso_seco_neto).toFixed(2)} kg</td>
-                            <td>${parseFloat(row.au_oz || 0).toFixed(2)}</td>
-                            <td>$${parseFloat(row.valor_au_usd || 0).toFixed(2)}</td>
-                            <td>${parseFloat(row.ag_oz || 0).toFixed(2)}</td>
-                            <td>$${parseFloat(row.valor_ag_usd || 0).toFixed(2)}</td>
-                            <td><b>$${parseFloat(row.valor_total_usd || 0).toFixed(2)}</b></td>
-                            <td><span class="badge">${row.estatus}</span></td>
-                        </tr>
-                    `;
-                });
-
-                document.getElementById('kpiKgSeco').innerText = `${totalKgSeco.toFixed(2)} kg`;
-                document.getElementById('kpiOzAu').innerText = `${totalOzAu.toFixed(2)} Oz`;
-                document.getElementById('kpiValorAu').innerText = `$${totalValorAu.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-                document.getElementById('kpiValorTotal').innerText = `$${totalValorGral.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
-            } else {
-                alert(r.error);
-            }
-        } catch (err) {
-            console.error('Error al cargar reporte maestro:', err);
-        }
-    }
-
-    function toggleLotes(id) {
-        const el = document.getElementById(id);
-        el.style.display = el.style.display === 'table-row' ? 'none' : 'table-row';
-    }
-
-    async function cambiarEstado(id, nuevoEstado) {
-        const res = await fetch(`${API_URL}/api/cargas/${id}/estado`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ estado: nuevoEstado, rol_usuario: usuarioSesion.rol })
-        });
-        const r = await res.json();
-        if (!r.success) alert(r.error);
-        else cargarCargas();
-    }
-
-    function filtrarTabla() {
-        const texto = document.getElementById('srcTexto').value.toLowerCase();
-        const fecha = document.getElementById('srcFecha').value;
-        const estado = document.getElementById('srcEstado').value;
-
-        const filtrados = cargasGlobales.filter(c => {
-            const matchTexto = c.proveedor.toLowerCase().includes(texto) || 
-                               c.codigo_carga.toLowerCase().includes(texto) ||
-                               c.lotes.some(l => l.codigo_lote.toLowerCase().includes(texto));
-            
-            const matchFecha = !fecha || c.fecha.startsWith(fecha);
-            const matchEstado = !estado || c.estado === estado;
-
-            return matchTexto && matchFecha && matchEstado;
-        });
-
-        renderTabla(filtrados);
-    }
-
-    async function borrarHistorial() {
-        if (!confirm('¿Borrar todo el historial?')) return;
-        const res = await fetch(`${API_URL}/api/cargas`, {
-            method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ rol_usuario: usuarioSesion.rol })
-        });
-        const r = await res.json();
-        if (r.success) cargarCargas();
-        else alert(r.error);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
