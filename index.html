@@ -76,7 +76,27 @@
 
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
 
-        /* VENTANA EMERGENTE (MODAL) */
+        /* ESTILO SIMPLIFICADO DE TABLA DE HISTORIAL */
+        .tabla-simplificada {
+            background: #ffffff;
+            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        .tabla-simplificada table { margin-top: 0; }
+        .tabla-simplificada th { background: #2d3748; color: #ffffff; font-size: 12px; text-transform: uppercase; }
+        .fila-lote-detalles { background: #f8fafc; font-size: 12px; }
+        .box-muestras {
+            background: #edf2f7;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e0;
+            display: inline-block;
+            text-align: left;
+            margin-top: 4px;
+        }
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 10000; }
         .modal-box { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     </style>
@@ -195,28 +215,15 @@
         </div>
     </div>
 
-    <!-- 3. HISTORIAL -->
+    <!-- 3. HISTORIAL GENERAL SIMPLIFICADO -->
     <div id="secHistorial" class="seccion-app">
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-                <h3>📋 Historial de Cargas y Lotes</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3>📋 Historial Único de Cargas y Lotes Desglosados</h3>
                 <button id="btnVaciar" onclick="borrarHistorial()" class="btn-peligro" style="display: none;">Vaciar Historial</button>
             </div>
 
-            <table id="tablaCargas">
-                <thead>
-                    <tr>
-                        <th>Fecha</th>
-                        <th>Carga Master</th>
-                        <th>Proveedor</th>
-                        <th>N° Lotes</th>
-                        <th>Peso Seco Total</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div id="contenedorHistorialSimplificado"></div>
         </div>
     </div>
 
@@ -226,7 +233,6 @@
             <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
             <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Módulo exclusivo para Administración y Gerencia.</p>
 
-            <!-- KPIS CORREGIDOS -->
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
                 <div style="background: #3182ce; color: white; padding: 15px; border-radius: 8px; text-align: center;">
                     <span style="font-size: 11px; text-transform: uppercase;">📦 Total en Acopio (Peso Bruto)</span>
@@ -394,7 +400,7 @@
 
 </div>
 
-<!-- VENTANA EMERGENTE (MODAL DE DEVOLUCIÓN DE CARBÓN EN PESO BRUTO) -->
+<!-- MODAL DE DEVOLUCIÓN DE CARBÓN -->
 <div id="modalDevolucion" class="modal-overlay">
     <div class="modal-box">
         <h3 style="margin-bottom: 5px; color: #2d3748;">🤝 Confirmar Devolución a Cliente</h3>
@@ -404,23 +410,14 @@
             <input type="hidden" id="modalLoteId">
             <input type="hidden" id="modalStockMaximo">
             
-            <div class="campo">
-                <label>Proveedor / Minero:</label>
-                <input type="text" id="modalProveedor" readonly style="background: #edf2f7;">
-            </div>
-            <div class="campo">
-                <label>Código de Lote:</label>
-                <input type="text" id="modalLote" readonly style="background: #edf2f7;">
-            </div>
+            <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="modalProveedor" readonly style="background: #edf2f7;"></div>
+            <div class="campo"><label>Código de Lote:</label><input type="text" id="modalLote" readonly style="background: #edf2f7;"></div>
             <div class="campo">
                 <label>Peso Bruto a Devolver (kg):</label>
                 <input type="number" step="0.01" id="modalPeso" required placeholder="Ingresa peso...">
                 <span id="lblStockMaxInfo" style="font-size: 11px; color: #2b6cb0; margin-top: 2px; display: block;"></span>
             </div>
-            <div class="campo">
-                <label>Observación / Comprobante:</label>
-                <input type="text" id="modalObs" placeholder="Ej: Entregado a chofer Juan Pérez / Guía N° XXX">
-            </div>
+            <div class="campo"><label>Observación / Comprobante:</label><input type="text" id="modalObs" placeholder="Ej: Entregado a chofer Juan Pérez / Guía N° XXX"></div>
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button type="button" onclick="cerrarModalDevolucion()" class="btn-secundario" style="flex: 1;">Cancelar</button>
@@ -519,7 +516,7 @@
     }
 
     function abrirModalDevolucion(id, proveedor, lote, pesoBruto) {
-        const pBruto = parseFloat(pesoBruto);
+        const pBruto = parseFloat(pesoBruto || 0);
         document.getElementById('modalLoteId').value = id;
         document.getElementById('modalProveedor').value = proveedor;
         document.getElementById('modalLote').value = lote;
@@ -534,7 +531,6 @@
         document.getElementById('modalDevolucion').style.display = 'none';
     }
 
-    /* CONFIRMAR DEVOLUCIÓN VALIDANDO LÍMITE */
     document.getElementById('formModalDevolucion').addEventListener('submit', async (e) => {
         e.preventDefault();
         const lote_id = document.getElementById('modalLoteId').value;
@@ -571,18 +567,15 @@
 
             const r = await res.json();
             if (r.success) {
-                alert('Devolución por Peso Bruto registrada correctamente.');
+                alert('Devolución registrada correctamente.');
                 cerrarModalDevolucion();
                 cargarCarbonDesorbido();
             } else {
                 alert(r.error || 'Error al procesar la entrega.');
             }
-        } catch (err) {
-            alert('Error de conexión.');
-        }
+        } catch (err) { alert('Error de conexión.'); }
     });
 
-    /* RECALCULO DE KPIS DE CARBÓN DESORBIDO Y ACOPIO */
     async function cargarCarbonDesorbido() {
         try {
             const res = await fetch(`${API_URL}/api/carbon-desorbido`);
@@ -593,7 +586,7 @@
                 const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
                 tbodyPend.innerHTML = '';
                 r.pendientesDevolucion.forEach(p => {
-                    const bruto = parseFloat(p.peso_bruto || 0);
+                    const bruto = parseFloat(p.peso_bruto || p.peso_seco_neto || 0);
                     sumPendientesBruto += bruto;
                     tbodyPend.innerHTML += `
                         <tr>
@@ -627,20 +620,15 @@
                     `;
                 });
 
-                // 1. Azul: Stock físico en acopio sin procesar
                 document.getElementById('kpiAcopioTotal').innerText = `${sumPendientesBruto.toFixed(2)} kg`;
 
-                // 2. Verde: Carbón desorbido listo DISPONIBLE en planta = Ingresos de Desorción - Devoluciones
                 let desorcionDisponible = sumIngresosDesorcion - sumDevuelto;
                 if (desorcionDisponible < 0) desorcionDisponible = 0;
                 document.getElementById('kpiCarbonDesorbido').innerText = `${desorcionDisponible.toFixed(2)} kg`;
 
-                // 3. Rojo: Devoluciones a clientes acumuladas
                 document.getElementById('kpiDevueltoCliente').innerText = `${sumDevuelto.toFixed(2)} kg`;
             }
-        } catch (err) {
-            console.error('Error al cargar movimientos de carbón:', err);
-        }
+        } catch (err) { console.error('Error al cargar movimientos de carbón:', err); }
     }
 
     document.getElementById('formRetornoPlant').addEventListener('submit', async (e) => {
@@ -781,6 +769,81 @@
         finally { btnGuardar.disabled = false; btnGuardar.innerText = 'Guardar Carga Completa'; }
     });
 
+    async function cargarCargas() {
+        const res = await fetch(`${API_URL}/api/cargas`);
+        const r = await res.json();
+        if (r.success) { cargasGlobales = r.data; renderTablaSimplificada(cargasGlobales); }
+    }
+
+    /* RENDER SIMPLIFICADO: CONSOLIDADO UNIFICADO CON BBOX DE MUESTRAS */
+    function renderTablaSimplificada(lista) {
+        const contenedor = document.getElementById('contenedorHistorialSimplificado');
+        contenedor.innerHTML = '';
+
+        lista.forEach(c => {
+            const fecha = new Date(c.fecha).toLocaleString();
+            const canEditar = (usuarioSesion.rol === 'ADMIN' || usuarioSesion.rol === 'SUPERVISOR' || usuarioSesion.rol === 'GERENCIA');
+
+            let filasLotes = c.lotes.map(l => {
+                let arrayMuestras = [];
+                try {
+                    arrayMuestras = typeof l.pesos_muestras === 'string' ? JSON.parse(l.pesos_muestras) : (l.pesos_muestras || []);
+                } catch(e) { arrayMuestras = []; }
+
+                const detalleMuestrasHtml = arrayMuestras.map((m, idx) => `<b>#${idx + 1}:</b> ${m}g`).join(' | ');
+
+                return `
+                    <tr class="fila-lote-detalles">
+                        <td><b>${l.codigo_lote}</b></td>
+                        <td>${parseFloat(l.peso_bruto || 0).toFixed(2)} kg</td>
+                        <td>${parseFloat(l.tara || 0).toFixed(2)} kg</td>
+                        <td>${parseFloat(l.peso_muestras_total || 0).toFixed(3)} kg</td>
+                        <td>${parseFloat(l.porcentaje_humedad || 0).toFixed(2)}%</td>
+                        <td><b>${parseFloat(l.peso_seco_neto || 0).toFixed(2)} kg</b></td>
+                        <td>
+                            <div class="box-muestras">
+                                <div><b>N° Muestras:</b> ${arrayMuestras.length || l.cantidad_muestras || 0}</div>
+                                <div style="font-size: 11px; color: #4a5568; margin-top: 2px;">${detalleMuestrasHtml || 'Sin desglose'}</div>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            contenedor.innerHTML += `
+                <div class="tabla-simplificada">
+                    <div style="background: #edf2f7; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e0;">
+                        <div>
+                            <b>Carga Master:</b> <span style="color: #2b6cb0;">${c.codigo_carga}</span> | 
+                            <b>Proveedor:</b> ${c.proveedor} | 
+                            <b>Fecha:</b> ${fecha}
+                        </div>
+                        <div>
+                            <select ${!canEditar ? 'disabled' : ''} onchange="cambiarEstado(${c.id}, this.value)">
+                                <option value="Por Liquidar" ${c.estado === 'Por Liquidar' ? 'selected' : ''}>Por Liquidar</option>
+                                <option value="Liquidado" ${c.estado === 'Liquidado' ? 'selected' : ''}>Liquidado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Cod. Lote</th>
+                                <th>P. Bruto</th>
+                                <th>Tara</th>
+                                <th>Suma Muestras</th>
+                                <th>Humedad %</th>
+                                <th>P. Seco Neto</th>
+                                <th>Desglose Individual de Muestras</th>
+                            </tr>
+                        </thead>
+                        <tbody>${filasLotes}</tbody>
+                    </table>
+                </div>
+            `;
+        });
+    }
+
     async function cargarControlMaestroGerencia() {
         try {
             const res = await fetch(`${API_URL}/api/gerencia/control-maestro`, { headers: { 'x-rol-usuario': usuarioSesion.rol } });
@@ -863,42 +926,6 @@
             const imgWidth = 190, imgHeight = (canvas.height * imgWidth) / canvas.width;
             pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
             pdf.save("Reporte_Ejecutivo_Mensual.pdf");
-        });
-    }
-
-    async function cargarCargas() {
-        const res = await fetch(`${API_URL}/api/cargas`);
-        const r = await res.json();
-        if (r.success) { cargasGlobales = r.data; renderTabla(cargasGlobales); }
-    }
-
-    function renderTabla(lista) {
-        const tbody = document.querySelector('#tablaCargas tbody'); tbody.innerHTML = '';
-        lista.forEach(c => {
-            const fecha = new Date(c.fecha).toLocaleString();
-            const totalSeco = c.lotes.reduce((sum, l) => sum + parseFloat(l.peso_seco_neto), 0).toFixed(2);
-            const canEditar = (usuarioSesion.rol === 'ADMIN' || usuarioSesion.rol === 'SUPERVISOR' || usuarioSesion.rol === 'GERENCIA');
-            let optionsEstado = `<select ${!canEditar ? 'disabled' : ''} onchange="cambiarEstado(${c.id}, this.value)"><option value="Por Liquidar" ${c.estado === 'Por Liquidar' ? 'selected' : ''}>Por Liquidar</option><option value="Liquidado" ${c.estado === 'Liquidado' ? 'selected' : ''}>Liquidado</option></select>`;
-
-            tbody.innerHTML += `
-                <tr class="fila-carga">
-                    <td>${fecha}</td>
-                    <td><b>${c.codigo_carga}</b></td>
-                    <td>${c.proveedor}</td>
-                    <td>${c.lotes.length}</td>
-                    <td><b>${totalSeco} kg</b></td>
-                    <td>${optionsEstado}</td>
-                    <td><button onclick="toggleLotes('lotes-${c.id}')" class="btn-secundario">▼ Lotes</button></td>
-                </tr>
-                <tr id="lotes-${c.id}" class="detalles-lotes">
-                    <td colspan="7">
-                        <table style="background: white;">
-                            <thead><tr><th>Cod. Lote</th><th>Bruto</th><th>Tara</th><th>Muestras Total (kg)</th><th>Humedad %</th><th>Seco Neto</th></tr></thead>
-                            <tbody>${c.lotes.map(l => `<tr><td>${l.codigo_lote}</td><td>${l.peso_bruto} kg</td><td>${l.tara} kg</td><td>${l.peso_muestras_total} kg</td><td>${l.porcentaje_humedad}%</td><td><b>${l.peso_seco_neto} kg</b></td></tr>`).join('')}</tbody>
-                        </table>
-                    </td>
-                </tr>
-            `;
         });
     }
 
