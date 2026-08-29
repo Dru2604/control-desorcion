@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Sistema de Control de Desorción</title>
-    <!-- Librerías Externas para Gráficos y Exportación -->
+    <!-- Librerías Externas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -17,59 +17,26 @@
         .login-box { background: white; padding: 35px; border-radius: 12px; width: 100%; max-width: 380px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; }
         .logo-login { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; object-fit: cover; border: 2px solid #cbd5e0; }
 
-        /* NAVEGACIÓN LATERAL RETRÁCTIL */
         .sidebar { 
-            width: 70px; 
-            background: #1a202c; 
-            color: white; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-            padding: 20px 8px; 
-            position: fixed; 
-            height: 100vh; 
-            z-index: 1000;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            overflow: hidden;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.15);
+            width: 70px; background: #1a202c; color: white; display: flex; flex-direction: column; justify-content: space-between; 
+            padding: 20px 8px; position: fixed; height: 100vh; z-index: 1000;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); overflow: hidden; box-shadow: 4px 0 10px rgba(0,0,0,0.15);
         }
-
-        .sidebar:hover { 
-            width: 250px; 
-            padding: 20px 12px;
-        }
+        .sidebar:hover { width: 250px; padding: 20px 12px; }
 
         .sidebar-top { text-align: center; }
         .logo-sidebar { width: 45px; height: 45px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; border: 2px solid #4a5568; transition: 0.3s; }
         .sidebar:hover .logo-sidebar { width: 70px; height: 70px; }
         
-        .sidebar-title { 
-            font-size: 14px; 
-            white-space: nowrap; 
-            opacity: 0; 
-            transition: opacity 0.2s ease; 
-            color: white;
-        }
+        .sidebar-title { font-size: 14px; white-space: nowrap; opacity: 0; transition: opacity 0.2s ease; color: white; }
         .sidebar:hover .sidebar-title { opacity: 1; }
 
         .menu-items { margin-top: 25px; display: flex; flex-direction: column; gap: 8px; }
         
         .nav-btn { 
-            background: transparent; 
-            color: #ffffff; 
-            border: none; 
-            padding: 12px 10px; 
-            width: 100%; 
-            text-align: left; 
-            font-size: 14px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            border-radius: 8px; 
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
-            transition: background 0.2s, color 0.2s; 
-            white-space: nowrap;
+            background: transparent; color: #ffffff; border: none; padding: 12px 10px; width: 100%; 
+            text-align: left; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; 
+            display: flex; align-items: center; gap: 15px; transition: background 0.2s, color 0.2s; white-space: nowrap;
         }
 
         .nav-btn .icon { font-size: 18px; min-width: 30px; text-align: center; color: #ffffff; }
@@ -78,78 +45,16 @@
 
         .nav-btn:hover, .nav-btn.active { background: #2d3748; color: #ffffff; }
 
-        /* PERFIL TIPO FACEBOOK */
-        .sidebar-bottom { 
-            border-top: 1px solid #2d3748; 
-            padding-top: 12px; 
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .user-mini-profile {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            width: 100%;
-            padding: 4px;
-            cursor: pointer;
-        }
-
-        .user-avatar-icon {
-            font-size: 22px;
-            background: #ffffff;
-            color: #718096;
-            border-radius: 50%;
-            min-width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-
-        .user-info-text {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            flex: 1;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            white-space: nowrap;
-            overflow: hidden;
-        }
-
+        .sidebar-bottom { border-top: 1px solid #2d3748; padding-top: 12px; display: flex; flex-direction: column; align-items: center; }
+        .user-mini-profile { display: flex; align-items: center; gap: 12px; width: 100%; padding: 4px; cursor: pointer; }
+        .user-avatar-icon { font-size: 22px; background: #ffffff; color: #718096; border-radius: 50%; min-width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .user-info-text { display: flex; flex-direction: column; align-items: center; text-align: center; flex: 1; opacity: 0; transition: opacity 0.2s ease; white-space: nowrap; overflow: hidden; }
         .sidebar:hover .user-info-text { opacity: 1; }
+        .btn-logout-container { width: 100%; margin-top: 10px; opacity: 0; max-height: 0; overflow: hidden; transition: opacity 0.2s ease, max-height 0.3s ease; }
+        .sidebar:hover .btn-logout-container { opacity: 1; max-height: 50px; }
 
-        .btn-logout-container {
-            width: 100%;
-            margin-top: 10px;
-            opacity: 0;
-            max-height: 0;
-            overflow: hidden;
-            transition: opacity 0.2s ease, max-height 0.3s ease;
-        }
-
-        .sidebar:hover .btn-logout-container {
-            opacity: 1;
-            max-height: 50px;
-        }
-
-        /* CONTENIDO PRINCIPAL */
-        .main-content { 
-            margin-left: 70px; 
-            flex: 1; 
-            padding: 30px; 
-            width: calc(100vw - 70px); 
-            transition: margin-left 0.3s ease, width 0.3s ease;
-        }
-
-        .sidebar:hover ~ .main-content {
-            margin-left: 250px;
-            width: calc(100vw - 250px);
-        }
+        .main-content { margin-left: 70px; flex: 1; padding: 30px; width: calc(100vw - 70px); transition: margin-left 0.3s ease, width 0.3s ease; }
+        .sidebar:hover ~ .main-content { margin-left: 250px; width: calc(100vw - 250px); }
 
         .card { background: white; padding: 22px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
         .seccion-app { display: none; }
@@ -172,24 +77,8 @@
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
 
         /* VENTANA EMERGENTE (MODAL) */
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-        }
-
-        .modal-box {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 450px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 10000; }
+        .modal-box { background: white; padding: 25px; border-radius: 12px; width: 100%; max-width: 450px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
@@ -202,14 +91,8 @@
         <p style="font-size: 12px; color: #a0aec0; margin-bottom: 20px;">Control de Carbón y Desorción</p>
         
         <form id="formLogin">
-            <div class="campo">
-                <label>Usuario:</label>
-                <input type="text" id="userLogin" required placeholder="Ej: admin">
-            </div>
-            <div class="campo">
-                <label>Contraseña:</label>
-                <input type="password" id="passLogin" required placeholder="••••••••">
-            </div>
+            <div class="campo"><label>Usuario:</label><input type="text" id="userLogin" required placeholder="Ej: admin"></div>
+            <div class="campo"><label>Contraseña:</label><input type="password" id="passLogin" required placeholder="••••••••"></div>
             <button type="submit" style="width: 100%; margin-top: 10px;">Ingresar</button>
         </form>
         <p id="loginError" style="color: #e53e3e; font-size: 12px; margin-top: 10px; display: none;"></p>
@@ -222,30 +105,12 @@
         <img src="logo.jpeg" alt="Logo" class="logo-sidebar">
         <h4 class="sidebar-title">CONTROL DE ACOPIO</h4>
         <div class="menu-items">
-            <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)">
-                <span class="icon">📝</span>
-                <span class="text-btn">Registrar Carga</span>
-            </button>
-            <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)">
-                <span class="icon">🔍</span>
-                <span class="text-btn">Buscar y Filtrar</span>
-            </button>
-            <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)">
-                <span class="icon">📋</span>
-                <span class="text-btn">Historial General</span>
-            </button>
-            <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none;">
-                <span class="icon">🔄</span>
-                <span class="text-btn">Carbón Desorbido</span>
-            </button>
-            <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none;">
-                <span class="icon">📈</span>
-                <span class="text-btn">Reportes Mensuales</span>
-            </button>
-            <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none;">
-                <span class="icon">📊</span>
-                <span class="text-btn">Control Maestro</span>
-            </button>
+            <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)"><span class="icon">📝</span><span class="text-btn">Registrar Carga</span></button>
+            <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)"><span class="icon">🔍</span><span class="text-btn">Buscar y Filtrar</span></button>
+            <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)"><span class="icon">📋</span><span class="text-btn">Historial General</span></button>
+            <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none;"><span class="icon">🔄</span><span class="text-btn">Carbón Desorbido</span></button>
+            <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none;"><span class="icon">📈</span><span class="text-btn">Reportes Mensuales</span></button>
+            <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none;"><span class="icon">📊</span><span class="text-btn">Control Maestro</span></button>
         </div>
     </div>
     
@@ -316,14 +181,8 @@
         <div class="card">
             <h3>🔍 Motor de Búsqueda y Filtros</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 15px;">
-                <div>
-                    <label>Buscar por Proveedor / Carga / Lote:</label>
-                    <input type="text" id="srcTexto" oninput="filtrarTabla()" placeholder="Escribe texto...">
-                </div>
-                <div>
-                    <label>Filtrar por Fecha:</label>
-                    <input type="date" id="srcFecha" onchange="filtrarTabla()">
-                </div>
+                <div><label>Buscar por Proveedor / Carga / Lote:</label><input type="text" id="srcTexto" oninput="filtrarTabla()" placeholder="Escribe texto..."></div>
+                <div><label>Filtrar por Fecha:</label><input type="date" id="srcFecha" onchange="filtrarTabla()"></div>
                 <div>
                     <label>Estado de Liquidación:</label>
                     <select id="srcEstado" onchange="filtrarTabla()">
@@ -367,14 +226,14 @@
             <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
             <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Módulo exclusivo para Administración y Gerencia.</p>
 
-            <!-- RESUMEN DE KPIS -->
+            <!-- KPIS CORREGIDOS -->
             <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px;">
                 <div style="background: #3182ce; color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <span style="font-size: 11px; text-transform: uppercase;">📦 Total en Acopio (Stock Físico)</span>
+                    <span style="font-size: 11px; text-transform: uppercase;">📦 Total en Acopio (Peso Bruto)</span>
                     <h3 id="kpiAcopioTotal" style="font-size: 20px; margin-top: 5px;">0.00 kg</h3>
                 </div>
                 <div style="background: #38a169; color: white; padding: 15px; border-radius: 8px; text-align: center;">
-                    <span style="font-size: 11px; text-transform: uppercase;">🔄 Carbón Desorbido de Planta</span>
+                    <span style="font-size: 11px; text-transform: uppercase;">🔄 Desorción Disponible en Planta</span>
                     <h3 id="kpiCarbonDesorbido" style="font-size: 20px; margin-top: 5px;">0.00 kg</h3>
                 </div>
                 <div style="background: #e53e3e; color: white; padding: 15px; border-radius: 8px; text-align: center;">
@@ -389,7 +248,7 @@
                     <form id="formRetornoPlant">
                         <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="retProveedor" required></div>
                         <div class="campo"><label>Código de Lote:</label><input type="text" id="retLote" required></div>
-                        <div class="campo"><label>Peso Seco Retornado (kg):</label><input type="number" step="0.01" id="retPeso" required></div>
+                        <div class="campo"><label>Peso Retornado (kg):</label><input type="number" step="0.01" id="retPeso" required></div>
                         <div class="campo"><label>Observaciones:</label><input type="text" id="retObs"></div>
                         <button type="submit" class="btn-exito" style="width: 100%;">Registrar Ingreso</button>
                     </form>
@@ -419,7 +278,7 @@
                     <tr>
                         <th>Proveedor</th>
                         <th>Lote</th>
-                        <th>Peso Seco Neto (kg)</th>
+                        <th>Peso Bruto Disponible (kg)</th>
                         <th>Ubicación</th>
                         <th>Acción</th>
                     </tr>
@@ -435,7 +294,7 @@
                         <th>Tipo Movimiento</th>
                         <th>Proveedor / Cliente</th>
                         <th>Lote</th>
-                        <th>Peso Seco (kg)</th>
+                        <th>Peso (kg)</th>
                         <th>Observaciones</th>
                         <th>Usuario</th>
                     </tr>
@@ -535,14 +394,16 @@
 
 </div>
 
-<!-- VENTANA EMERGENTE (MODAL DE DEVOLUCIÓN DE CARBÓN) -->
+<!-- VENTANA EMERGENTE (MODAL DE DEVOLUCIÓN DE CARBÓN EN PESO BRUTO) -->
 <div id="modalDevolucion" class="modal-overlay">
     <div class="modal-box">
         <h3 style="margin-bottom: 5px; color: #2d3748;">🤝 Confirmar Devolución a Cliente</h3>
-        <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Registro formal de salida de carbón desorbido.</p>
+        <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Salida física de carbón en <b>Peso Bruto</b>.</p>
         
         <form id="formModalDevolucion">
             <input type="hidden" id="modalLoteId">
+            <input type="hidden" id="modalStockMaximo">
+            
             <div class="campo">
                 <label>Proveedor / Minero:</label>
                 <input type="text" id="modalProveedor" readonly style="background: #edf2f7;">
@@ -552,8 +413,9 @@
                 <input type="text" id="modalLote" readonly style="background: #edf2f7;">
             </div>
             <div class="campo">
-                <label>Peso Seco Disponible (kg):</label>
-                <input type="number" step="0.01" id="modalPeso" required>
+                <label>Peso Bruto a Devolver (kg):</label>
+                <input type="number" step="0.01" id="modalPeso" required placeholder="Ingresa peso...">
+                <span id="lblStockMaxInfo" style="font-size: 11px; color: #2b6cb0; margin-top: 2px; display: block;"></span>
             </div>
             <div class="campo">
                 <label>Observación / Comprobante:</label>
@@ -656,81 +518,14 @@
         if (btn) btn.classList.add('active');
     }
 
-    /* REGISTRO DE INGRESO DE CARBÓN DESORBIDO DE PLANTA */
-    document.getElementById('formRetornoPlant').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const proveedor = document.getElementById('retProveedor').value;
-        const codigo_lote = document.getElementById('retLote').value;
-        const peso_seco_kg = parseFloat(document.getElementById('retPeso').value);
-        const observaciones = document.getElementById('retObs').value;
-
-        try {
-            const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tipo_movimiento: 'ENTRADA_DESORCION',
-                    proveedor,
-                    codigo_lote,
-                    peso_seco_kg,
-                    observaciones,
-                    usuario_registro: usuarioSesion.usuario
-                })
-            });
-
-            const r = await res.json();
-            if (r.success) {
-                alert('Ingreso de Carbón Desorbido registrado correctamente.');
-                document.getElementById('formRetornoPlant').reset();
-                cargarCarbonDesorbido();
-            } else {
-                alert(r.error || 'Error al guardar el ingreso.');
-            }
-        } catch (err) {
-            alert('Error de conexión al guardar.');
-        }
-    });
-
-    /* REGISTRO DE SALIDA (VENTA O PRÉSTAMO) */
-    document.getElementById('formSalidaVirgen').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const tipo_movimiento = document.getElementById('virgenTipo').value;
-        const proveedor = document.getElementById('virgenCliente').value;
-        const peso_seco_kg = parseFloat(document.getElementById('virgenPeso').value);
-        const observaciones = document.getElementById('virgenObs').value;
-
-        try {
-            const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    tipo_movimiento,
-                    proveedor,
-                    codigo_lote: '-',
-                    peso_seco_kg,
-                    observaciones,
-                    usuario_registro: usuarioSesion.usuario
-                })
-            });
-
-            const r = await res.json();
-            if (r.success) {
-                alert('Salida de carbón registrada correctamente.');
-                document.getElementById('formSalidaVirgen').reset();
-                cargarCarbonDesorbido();
-            } else {
-                alert(r.error || 'Error al registrar la salida.');
-            }
-        } catch (err) {
-            alert('Error de conexión.');
-        }
-    });
-
-    function abrirModalDevolucion(id, proveedor, lote, peso) {
+    function abrirModalDevolucion(id, proveedor, lote, pesoBruto) {
+        const pBruto = parseFloat(pesoBruto);
         document.getElementById('modalLoteId').value = id;
         document.getElementById('modalProveedor').value = proveedor;
         document.getElementById('modalLote').value = lote;
-        document.getElementById('modalPeso').value = peso;
+        document.getElementById('modalStockMaximo').value = pBruto;
+        document.getElementById('modalPeso').value = pBruto.toFixed(2);
+        document.getElementById('lblStockMaxInfo').innerText = `Stock máximo disponible en Peso Bruto: ${pBruto.toFixed(2)} kg`;
         document.getElementById('modalObs').value = '';
         document.getElementById('modalDevolucion').style.display = 'flex';
     }
@@ -739,13 +534,25 @@
         document.getElementById('modalDevolucion').style.display = 'none';
     }
 
+    /* CONFIRMAR DEVOLUCIÓN VALIDANDO LÍMITE */
     document.getElementById('formModalDevolucion').addEventListener('submit', async (e) => {
         e.preventDefault();
         const lote_id = document.getElementById('modalLoteId').value;
         const proveedor = document.getElementById('modalProveedor').value;
         const codigo_lote = document.getElementById('modalLote').value;
-        const peso_seco_kg = parseFloat(document.getElementById('modalPeso').value);
+        const peso_a_devolver = parseFloat(document.getElementById('modalPeso').value);
+        const stock_maximo = parseFloat(document.getElementById('modalStockMaximo').value);
         const observaciones = document.getElementById('modalObs').value;
+
+        if (peso_a_devolver > stock_maximo) {
+            alert(`⚠️ No puedes devolver ${peso_a_devolver} kg.\nEl volumen máximo en stock para este lote es de ${stock_maximo.toFixed(2)} kg.`);
+            return;
+        }
+
+        if (peso_a_devolver <= 0) {
+            alert('Ingresa una cantidad válida mayor a 0 kg.');
+            return;
+        }
 
         try {
             const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
@@ -755,7 +562,7 @@
                     tipo_movimiento: 'DEVOLUCION_CLIENTE',
                     proveedor,
                     codigo_lote,
-                    peso_seco_kg,
+                    peso_seco_kg: peso_a_devolver,
                     observaciones,
                     usuario_registro: usuarioSesion.usuario,
                     lote_id
@@ -764,7 +571,7 @@
 
             const r = await res.json();
             if (r.success) {
-                alert('Devolución registrada correctamente.');
+                alert('Devolución por Peso Bruto registrada correctamente.');
                 cerrarModalDevolucion();
                 cargarCarbonDesorbido();
             } else {
@@ -775,24 +582,26 @@
         }
     });
 
+    /* RECALCULO DE KPIS DE CARBÓN DESORBIDO Y ACOPIO */
     async function cargarCarbonDesorbido() {
         try {
             const res = await fetch(`${API_URL}/api/carbon-desorbido`);
             const r = await res.json();
             if (r.success) {
-                let sumPendientes = 0, sumDesorbido = 0, sumDevuelto = 0, sumSalidaVirgen = 0;
+                let sumPendientesBruto = 0, sumIngresosDesorcion = 0, sumDevuelto = 0, sumSalidaVirgen = 0;
 
                 const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
                 tbodyPend.innerHTML = '';
                 r.pendientesDevolucion.forEach(p => {
-                    sumPendientes += parseFloat(p.peso_seco_neto || 0);
+                    const bruto = parseFloat(p.peso_bruto || 0);
+                    sumPendientesBruto += bruto;
                     tbodyPend.innerHTML += `
                         <tr>
                             <td><b>${p.proveedor}</b></td>
                             <td>${p.codigo_lote}</td>
-                            <td><b>${parseFloat(p.peso_seco_neto).toFixed(2)} kg</b></td>
+                            <td><b>${bruto.toFixed(2)} kg</b></td>
                             <td><span class="badge" style="background:#e2e8f0; color:#2d3748;">${p.ubicacion_fisica}</span></td>
-                            <td><button onclick="abrirModalDevolucion('${p.lote_id}', '${p.proveedor}', '${p.codigo_lote}', '${p.peso_seco_neto}')" class="btn-exito">Entregar al Cliente</button></td>
+                            <td><button onclick="abrirModalDevolucion('${p.lote_id}', '${p.proveedor}', '${p.codigo_lote}', '${bruto}')" class="btn-exito">Entregar al Cliente</button></td>
                         </tr>
                     `;
                 });
@@ -801,7 +610,7 @@
                 tbodyMov.innerHTML = '';
                 r.movimientos.forEach(m => {
                     const peso = parseFloat(m.peso_seco_kg || 0);
-                    if (m.tipo_movimiento === 'ENTRADA_DESORCION') sumDesorbido += peso;
+                    if (m.tipo_movimiento === 'ENTRADA_DESORCION') sumIngresosDesorcion += peso;
                     if (m.tipo_movimiento === 'DEVOLUCION_CLIENTE') sumDevuelto += peso;
                     if (m.tipo_movimiento === 'VENTA_VIRGEN' || m.tipo_movimiento === 'PRESTAMO_VIRGEN') sumSalidaVirgen += peso;
 
@@ -818,12 +627,15 @@
                     `;
                 });
 
-                // CÁLCULO DE STOCK REAL RESTANDO SALIDAS Y DEVOLUCIONES
-                let stockFisicoReal = sumPendientes + sumDesorbido - sumDevuelto - sumSalidaVirgen;
-                if (stockFisicoReal < 0) stockFisicoReal = 0;
+                // 1. Azul: Stock físico en acopio sin procesar
+                document.getElementById('kpiAcopioTotal').innerText = `${sumPendientesBruto.toFixed(2)} kg`;
 
-                document.getElementById('kpiAcopioTotal').innerText = `${stockFisicoReal.toFixed(2)} kg`;
-                document.getElementById('kpiCarbonDesorbido').innerText = `${sumDesorbido.toFixed(2)} kg`;
+                // 2. Verde: Carbón desorbido listo DISPONIBLE en planta = Ingresos de Desorción - Devoluciones
+                let desorcionDisponible = sumIngresosDesorcion - sumDevuelto;
+                if (desorcionDisponible < 0) desorcionDisponible = 0;
+                document.getElementById('kpiCarbonDesorbido').innerText = `${desorcionDisponible.toFixed(2)} kg`;
+
+                // 3. Rojo: Devoluciones a clientes acumuladas
                 document.getElementById('kpiDevueltoCliente').innerText = `${sumDevuelto.toFixed(2)} kg`;
             }
         } catch (err) {
@@ -831,23 +643,63 @@
         }
     }
 
+    document.getElementById('formRetornoPlant').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const proveedor = document.getElementById('retProveedor').value;
+        const codigo_lote = document.getElementById('retLote').value;
+        const peso_seco_kg = parseFloat(document.getElementById('retPeso').value);
+        const observaciones = document.getElementById('retObs').value;
+
+        try {
+            const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipo_movimiento: 'ENTRADA_DESORCION', proveedor, codigo_lote, peso_seco_kg, observaciones, usuario_registro: usuarioSesion.usuario
+                })
+            });
+            const r = await res.json();
+            if (r.success) {
+                alert('Ingreso registrado correctamente.');
+                document.getElementById('formRetornoPlant').reset();
+                cargarCarbonDesorbido();
+            }
+        } catch (err) { alert('Error al guardar.'); }
+    });
+
+    document.getElementById('formSalidaVirgen').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const tipo_movimiento = document.getElementById('virgenTipo').value;
+        const proveedor = document.getElementById('virgenCliente').value;
+        const peso_seco_kg = parseFloat(document.getElementById('virgenPeso').value);
+        const observaciones = document.getElementById('virgenObs').value;
+
+        try {
+            const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipo_movimiento, proveedor, codigo_lote: '-', peso_seco_kg, observaciones, usuario_registro: usuarioSesion.usuario
+                })
+            });
+            const r = await res.json();
+            if (r.success) {
+                alert('Salida registrada correctamente.');
+                document.getElementById('formSalidaVirgen').reset();
+                cargarCarbonDesorbido();
+            }
+        } catch (err) { alert('Error al guardar.'); }
+    });
+
     function generarCamposMuestras(btn) {
         const parent = btn.closest('.lote-item');
         const cantidad = parseInt(parent.querySelector('.l-cant-muestras').value);
         const cont = parent.querySelector('.contenedor-campos-muestras');
-
         if (!cantidad || cantidad <= 0) return alert('Ingresa una cantidad válida de muestras.');
-
         cont.innerHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; margin-top: 5px;"></div>';
         const grid = cont.querySelector('div');
-
         for (let i = 1; i <= cantidad; i++) {
-            grid.innerHTML += `
-                <div>
-                    <label style="font-size: 11px;">Muestra #${i} (g):</label>
-                    <input type="number" step="0.01" class="peso-muestra-val" required placeholder="45.00">
-                </div>
-            `;
+            grid.innerHTML += `<div><label style="font-size: 11px;">Muestra #${i} (g):</label><input type="number" step="0.01" class="peso-muestra-val" required placeholder="45.00"></div>`;
         }
     }
 
@@ -855,9 +707,7 @@
         const cont = document.getElementById('contenedorLotes');
         const numLote = cont.querySelectorAll('.lote-item').length + 1;
         const div = document.createElement('div');
-        div.className = 'lote-item card';
-        div.style.marginTop = '10px';
-        div.style.position = 'relative';
+        div.className = 'lote-item card'; div.style.marginTop = '10px'; div.style.position = 'relative';
         div.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <span style="font-size: 12px; font-weight: bold; color: #4a5568;">Lote #${numLote}</span>
@@ -871,10 +721,7 @@
             </div>
             <div style="margin-top: 15px; background: #edf2f7; padding: 10px; border-radius: 6px;">
                 <div style="display: flex; gap: 10px; align-items: flex-end;">
-                    <div style="flex: 1;">
-                        <label>¿Cuántas muestras son para este lote?:</label>
-                        <input type="number" class="l-cant-muestras" min="1" placeholder="Ej: 3">
-                    </div>
+                    <div style="flex: 1;"><label>¿Cuántas muestras son para este lote?:</label><input type="number" class="l-cant-muestras" min="1" placeholder="Ej: 3"></div>
                     <button type="button" class="btn-secundario" onclick="generarCamposMuestras(this)">Generar Campos de Muestras</button>
                 </div>
                 <div class="contenedor-campos-muestras" style="margin-top: 10px;"></div>
@@ -885,24 +732,18 @@
 
     function eliminarLote(btn) {
         const lotes = document.querySelectorAll('.lote-item');
-        if (lotes.length <= 1) {
-            alert('Debe existir al menos un lote para registrar la carga.');
-            return;
-        }
-        const loteCard = btn.closest('.lote-item');
-        loteCard.remove();
+        if (lotes.length <= 1) return alert('Debe existir al menos un lote.');
+        btn.closest('.lote-item').remove();
     }
 
     document.getElementById('formCarga').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btnGuardar = document.getElementById('btnGuardar');
-        btnGuardar.disabled = true;
-        btnGuardar.innerText = 'Guardando...';
+        btnGuardar.disabled = true; btnGuardar.innerText = 'Guardando...';
 
         const codigo_carga = document.getElementById('codigo_carga').value;
         const proveedor = document.getElementById('proveedor').value;
         const fecha_operacion = document.getElementById('fecha_operacion').value;
-
         const lotesElems = document.querySelectorAll('.lote-item');
         const lotes = [];
 
@@ -910,11 +751,9 @@
             const inputsMuestras = el.querySelectorAll('.peso-muestra-val');
             if (inputsMuestras.length === 0) {
                 alert('Genera y llena los pesos de muestras para cada lote.');
-                btnGuardar.disabled = false;
-                btnGuardar.innerText = 'Guardar Carga Completa';
+                btnGuardar.disabled = false; btnGuardar.innerText = 'Guardar Carga Completa';
                 return;
             }
-
             lotes.push({
                 codigo_lote: el.querySelector('.l-codigo').value,
                 peso_bruto: parseFloat(el.querySelector('.l-bruto').value),
@@ -936,29 +775,19 @@
                 alert('Carga guardada exitosamente.');
                 document.getElementById('formCarga').reset();
                 document.querySelectorAll('.contenedor-campos-muestras').forEach(c => c.innerHTML = '');
-                cargarCargas();
-                mostrarSeccion('secHistorial');
-            } else {
-                alert(r.error || 'Error al guardar.');
-            }
-        } catch (err) {
-            alert('Error de conexión al guardar.');
-        } finally {
-            btnGuardar.disabled = false;
-            btnGuardar.innerText = 'Guardar Carga Completa';
-        }
+                cargarCargas(); mostrarSeccion('secHistorial');
+            } else alert(r.error || 'Error al guardar.');
+        } catch (err) { alert('Error de conexión.'); } 
+        finally { btnGuardar.disabled = false; btnGuardar.innerText = 'Guardar Carga Completa'; }
     });
 
     async function cargarControlMaestroGerencia() {
         try {
-            const res = await fetch(`${API_URL}/api/gerencia/control-maestro`, {
-                headers: { 'x-rol-usuario': usuarioSesion.rol }
-            });
+            const res = await fetch(`${API_URL}/api/gerencia/control-maestro`, { headers: { 'x-rol-usuario': usuarioSesion.rol } });
             const r = await res.json();
             if (r.success) {
                 let totalKgSeco = 0, totalOzAu = 0, totalValorAu = 0, totalValorGral = 0;
-                const tbody = document.querySelector('#tablaGerencia tbody');
-                tbody.innerHTML = '';
+                const tbody = document.querySelector('#tablaGerencia tbody'); tbody.innerHTML = '';
 
                 r.data.forEach(row => {
                     totalKgSeco += parseFloat(row.peso_seco_neto || 0);
@@ -987,31 +816,20 @@
                 document.getElementById('kpiValorAu').innerText = `$${totalValorAu.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
                 document.getElementById('kpiValorTotal').innerText = `$${totalValorGral.toLocaleString('en-US', {minimumFractionDigits: 2})}`;
             }
-        } catch (err) {
-            console.error('Error al cargar reporte maestro:', err);
-        }
+        } catch (err) { console.error(err); }
     }
 
     async function cargarReporteMensual() {
         try {
-            const res = await fetch(`${API_URL}/api/reportes/mensual`, {
-                headers: { 'x-rol-usuario': usuarioSesion.rol }
-            });
+            const res = await fetch(`${API_URL}/api/reportes/mensual`, { headers: { 'x-rol-usuario': usuarioSesion.rol } });
             const r = await res.json();
             if (r.success) {
                 const data = r.data;
-                const tbody = document.querySelector('#tablaReporteMensual tbody');
-                tbody.innerHTML = '';
-
-                const periodos = [];
-                const kgSecos = [];
-                const valoresUsd = [];
+                const tbody = document.querySelector('#tablaReporteMensual tbody'); tbody.innerHTML = '';
+                const periodos = [], kgSecos = [], valoresUsd = [];
 
                 data.forEach(row => {
-                    periodos.push(row.periodo);
-                    kgSecos.push(parseFloat(row.peso_seco_total).toFixed(2));
-                    valoresUsd.push(parseFloat(row.valor_usd_total).toFixed(2));
-
+                    periodos.push(row.periodo); kgSecos.push(parseFloat(row.peso_seco_total).toFixed(2)); valoresUsd.push(parseFloat(row.valor_usd_total).toFixed(2));
                     tbody.innerHTML += `
                         <tr>
                             <td><b>${row.mes_nombre || row.periodo}</b></td>
@@ -1027,45 +845,22 @@
 
                 const ctxKg = document.getElementById('chartKgSeco').getContext('2d');
                 if (chartKgInstance) chartKgInstance.destroy();
-                chartKgInstance = new Chart(ctxKg, {
-                    type: 'bar',
-                    data: {
-                        labels: periodos.slice().reverse(),
-                        datasets: [{ label: 'Kg Secos', data: kgSecos.slice().reverse(), backgroundColor: '#3182ce' }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
+                chartKgInstance = new Chart(ctxKg, { type: 'bar', data: { labels: periodos.slice().reverse(), datasets: [{ label: 'Kg Secos', data: kgSecos.slice().reverse(), backgroundColor: '#3182ce' }] }, options: { responsive: true, maintainAspectRatio: false } });
 
                 const ctxUsd = document.getElementById('chartValorUsd').getContext('2d');
                 if (chartValorInstance) chartValorInstance.destroy();
-                chartValorInstance = new Chart(ctxUsd, {
-                    type: 'line',
-                    data: {
-                        labels: periodos.slice().reverse(),
-                        datasets: [{ label: 'Valor USD ($)', data: valoresUsd.slice().reverse(), borderColor: '#38a169', fill: false }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
+                chartValorInstance = new Chart(ctxUsd, { type: 'line', data: { labels: periodos.slice().reverse(), datasets: [{ label: 'Valor USD ($)', data: valoresUsd.slice().reverse(), borderColor: '#38a169', fill: false }] }, options: { responsive: true, maintainAspectRatio: false } });
             }
-        } catch (err) {
-            console.error('Error al cargar reporte mensual:', err);
-        }
+        } catch (err) { console.error(err); }
     }
 
-    function exportarExcel() {
-        const tabla = document.getElementById('tablaReporteMensual');
-        const wb = XLSX.utils.table_to_book(tabla, { sheet: "Reporte Mensual" });
-        XLSX.writeFile(wb, "Reporte_Mensual_Desorcion.xlsx");
-    }
-
+    function exportarExcel() { XLSX.writeFile(XLSX.utils.table_to_book(document.getElementById('tablaReporteMensual'), { sheet: "Reporte Mensual" }), "Reporte_Mensual_Desorcion.xlsx"); }
     function exportarPDF() {
-        const element = document.getElementById('areaReporteImpresion');
-        html2canvas(element).then(canvas => {
+        html2canvas(document.getElementById('areaReporteImpresion')).then(canvas => {
             const imgData = canvas.toDataURL('image/png');
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 190;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            const imgWidth = 190, imgHeight = (canvas.height * imgWidth) / canvas.width;
             pdf.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
             pdf.save("Reporte_Ejecutivo_Mensual.pdf");
         });
@@ -1074,27 +869,16 @@
     async function cargarCargas() {
         const res = await fetch(`${API_URL}/api/cargas`);
         const r = await res.json();
-        if (r.success) {
-            cargasGlobales = r.data;
-            renderTabla(cargasGlobales);
-        }
+        if (r.success) { cargasGlobales = r.data; renderTabla(cargasGlobales); }
     }
 
     function renderTabla(lista) {
-        const tbody = document.querySelector('#tablaCargas tbody');
-        tbody.innerHTML = '';
-
+        const tbody = document.querySelector('#tablaCargas tbody'); tbody.innerHTML = '';
         lista.forEach(c => {
             const fecha = new Date(c.fecha).toLocaleString();
             const totalSeco = c.lotes.reduce((sum, l) => sum + parseFloat(l.peso_seco_neto), 0).toFixed(2);
             const canEditar = (usuarioSesion.rol === 'ADMIN' || usuarioSesion.rol === 'SUPERVISOR' || usuarioSesion.rol === 'GERENCIA');
-
-            let optionsEstado = `
-                <select ${!canEditar ? 'disabled' : ''} onchange="cambiarEstado(${c.id}, this.value)">
-                    <option value="Por Liquidar" ${c.estado === 'Por Liquidar' ? 'selected' : ''}>Por Liquidar</option>
-                    <option value="Liquidado" ${c.estado === 'Liquidado' ? 'selected' : ''}>Liquidado</option>
-                </select>
-            `;
+            let optionsEstado = `<select ${!canEditar ? 'disabled' : ''} onchange="cambiarEstado(${c.id}, this.value)"><option value="Por Liquidar" ${c.estado === 'Por Liquidar' ? 'selected' : ''}>Por Liquidar</option><option value="Liquidado" ${c.estado === 'Liquidado' ? 'selected' : ''}>Liquidado</option></select>`;
 
             tbody.innerHTML += `
                 <tr class="fila-carga">
@@ -1109,28 +893,8 @@
                 <tr id="lotes-${c.id}" class="detalles-lotes">
                     <td colspan="7">
                         <table style="background: white;">
-                            <thead>
-                                <tr>
-                                    <th>Cod. Lote</th>
-                                    <th>Bruto</th>
-                                    <th>Tara</th>
-                                    <th>Muestras Total (kg)</th>
-                                    <th>Humedad %</th>
-                                    <th>Seco Neto</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${c.lotes.map(l => `
-                                    <tr>
-                                        <td>${l.codigo_lote}</td>
-                                        <td>${l.peso_bruto} kg</td>
-                                        <td>${l.tara} kg</td>
-                                        <td>${l.peso_muestras_total} kg</td>
-                                        <td>${l.porcentaje_humedad}%</td>
-                                        <td><b>${l.peso_seco_neto} kg</b></td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
+                            <thead><tr><th>Cod. Lote</th><th>Bruto</th><th>Tara</th><th>Muestras Total (kg)</th><th>Humedad %</th><th>Seco Neto</th></tr></thead>
+                            <tbody>${c.lotes.map(l => `<tr><td>${l.codigo_lote}</td><td>${l.peso_bruto} kg</td><td>${l.tara} kg</td><td>${l.peso_muestras_total} kg</td><td>${l.porcentaje_humedad}%</td><td><b>${l.peso_seco_neto} kg</b></td></tr>`).join('')}</tbody>
                         </table>
                     </td>
                 </tr>
@@ -1140,10 +904,7 @@
 
     window.addEventListener('DOMContentLoaded', () => {
         const s = sessionStorage.getItem('sesionDesorcion');
-        if (s) {
-            usuarioSesion = JSON.parse(s);
-            iniciarApp();
-        }
+        if (s) { usuarioSesion = JSON.parse(s); iniciarApp(); }
     });
 </script>
 
