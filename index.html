@@ -180,7 +180,7 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 4: REPORTES MENSUALES CON GRÁFICOS (EXCLUSIVO ADMIN Y GERENCIA) -->
+    <!-- REPORTES MENSUALES -->
     <div id="secReportes" class="seccion-app">
         <div class="card" id="areaReporteImpresion">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -223,15 +223,75 @@
         </div>
     </div>
 
-    <!-- SECCIÓN 5: DESORCIÓN -->
+    <!-- CARBÓN DESORBIDO Y MOVIMIENTOS -->
     <div id="secDesorcion" class="seccion-app">
         <div class="card">
             <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
-            <p style="font-size: 12px; color: #718096;">Módulo exclusivo para Administración y Gerencia.</p>
+            <p style="font-size: 12px; color: #718096; margin-bottom: 20px;">Modulo exclusivo para Administración y Gerencia.</p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px;">
+                <div style="background: #e6fffa; padding: 15px; border-radius: 8px; border: 1px solid #319795;">
+                    <h4>➕ Entrada: Carbón Desorbido de Planta</h4>
+                    <form id="formRetornoPlant">
+                        <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="retProveedor" required></div>
+                        <div class="campo"><label>Código de Lote:</label><input type="text" id="retLote" required></div>
+                        <div class="campo"><label>Peso Seco Retornado (kg):</label><input type="number" step="0.01" id="retPeso" required></div>
+                        <div class="campo"><label>Observaciones:</label><input type="text" id="retObs"></div>
+                        <button type="submit" class="btn-exito" style="width: 100%;">Registrar Ingreso</button>
+                    </form>
+                </div>
+
+                <div style="background: #fffaf0; padding: 15px; border-radius: 8px; border: 1px solid #dd6b20;">
+                    <h4>📤 Salida: Venta o Préstamo de Carbón Virgen</h4>
+                    <form id="formSalidaVirgen">
+                        <div class="campo">
+                            <label>Tipo de Operación:</label>
+                            <select id="virgenTipo" required>
+                                <option value="VENTA_VIRGEN">Venta de Carbón Virgen</option>
+                                <option value="PRESTAMO_VIRGEN">Préstamo de Carbón Virgen</option>
+                            </select>
+                        </div>
+                        <div class="campo"><label>Cliente / Minero:</label><input type="text" id="virgenCliente" required></div>
+                        <div class="campo"><label>Cantidad (kg):</label><input type="number" step="0.01" id="virgenPeso" required></div>
+                        <div class="campo"><label>Detalles / Motivo:</label><input type="text" id="virgenObs"></div>
+                        <button type="submit" style="width: 100%; background: #dd6b20;">Registrar Salida</button>
+                    </form>
+                </div>
+            </div>
+
+            <h4>📦 Lotes Procesados Pendientes de Devolución</h4>
+            <table id="tablaPendientesDev">
+                <thead>
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Lote</th>
+                        <th>Peso Seco Neto (kg)</th>
+                        <th>Ubicación</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h4 style="margin-top: 25px;">📋 Historial de Movimientos</h4>
+            <table id="tablaMovimientosCarbon">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Tipo Movimiento</th>
+                        <th>Proveedor / Cliente</th>
+                        <th>Lote</th>
+                        <th>Peso Seco (kg)</th>
+                        <th>Observaciones</th>
+                        <th>Usuario</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
-    <!-- SECCIÓN 6: CONTROL MAESTRO -->
+    <!-- CONTROL MAESTRO GERENCIA -->
     <div id="secGerencia" class="seccion-app">
         <div class="card">
             <h3>📊 Control Maestro de Carbón y Valorización Financiera</h3>
@@ -288,7 +348,6 @@
             document.getElementById('btnVaciar').style.display = 'block';
         }
 
-        // HABILITAR REPORTES Y DESORCIÓN SOLO PARA ADMIN Y GERENCIA
         if (usuarioSesion.rol === 'GERENCIA' || usuarioSesion.rol === 'ADMIN') {
             document.getElementById('btnMenuDesorcion').style.display = 'flex';
             document.getElementById('btnMenuReportes').style.display = 'flex';
@@ -319,10 +378,13 @@
             cargarReporteMensual();
         }
 
+        if (id === 'secDesorcion') {
+            cargarCarbonDesorbido();
+        }
+
         if (btn) btn.classList.add('active');
     }
 
-    // CARGAR Y RENDERIZAR GRÁFICOS DEL REPORTE MENSUAL
     async function cargarReporteMensual() {
         try {
             const res = await fetch(`${API_URL}/api/reportes/mensual`, {
@@ -356,26 +418,24 @@
                     `;
                 });
 
-                // Renderizar Gráfico de Kg Secos
                 const ctxKg = document.getElementById('chartKgSeco').getContext('2d');
                 if (chartKgInstance) chartKgInstance.destroy();
                 chartKgInstance = new Chart(ctxKg, {
                     type: 'bar',
                     data: {
-                        labels: periodos.reverse(),
-                        datasets: [{ label: 'Kg Secos', data: kgSecos.reverse(), backgroundColor: '#3182ce' }]
+                        labels: periodos.slice().reverse(),
+                        datasets: [{ label: 'Kg Secos', data: kgSecos.slice().reverse(), backgroundColor: '#3182ce' }]
                     },
                     options: { responsive: true, maintainAspectRatio: false }
                 });
 
-                // Renderizar Gráfico de Valorización USD
                 const ctxUsd = document.getElementById('chartValorUsd').getContext('2d');
                 if (chartValorInstance) chartValorInstance.destroy();
                 chartValorInstance = new Chart(ctxUsd, {
                     type: 'line',
                     data: {
-                        labels: periodos,
-                        datasets: [{ label: 'Valor USD ($)', data: valoresUsd.reverse(), borderColor: '#38a169', fill: false }]
+                        labels: periodos.slice().reverse(),
+                        datasets: [{ label: 'Valor USD ($)', data: valoresUsd.slice().reverse(), borderColor: '#38a169', fill: false }]
                     },
                     options: { responsive: true, maintainAspectRatio: false }
                 });
@@ -385,14 +445,12 @@
         }
     }
 
-    // EXPORTAR TABLA A EXCEL
     function exportarExcel() {
         const tabla = document.getElementById('tablaReporteMensual');
         const wb = XLSX.utils.table_to_book(tabla, { sheet: "Reporte Mensual" });
         XLSX.writeFile(wb, "Reporte_Mensual_Desorcion.xlsx");
     }
 
-    // EXPORTAR PANTALLA Y GRÁFICOS A PDF
     function exportarPDF() {
         const element = document.getElementById('areaReporteImpresion');
         html2canvas(element).then(canvas => {
@@ -573,6 +631,46 @@
                 </tr>
             `;
         });
+    }
+
+    async function cargarCarbonDesorbido() {
+        try {
+            const res = await fetch(`${API_URL}/api/carbon-desorbido`);
+            const r = await res.json();
+            if (r.success) {
+                const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
+                tbodyPend.innerHTML = '';
+                r.pendientesDevolucion.forEach(p => {
+                    tbodyPend.innerHTML += `
+                        <tr>
+                            <td><b>${p.proveedor}</b></td>
+                            <td>${p.codigo_lote}</td>
+                            <td><b>${p.peso_seco_neto} kg</b></td>
+                            <td>${p.ubicacion_fisica}</td>
+                            <td><button onclick="entregarLoteCliente('${p.lote_id}', '${p.proveedor}', '${p.codigo_lote}', '${p.peso_seco_neto}')" class="btn-exito">Entregar al Cliente</button></td>
+                        </tr>
+                    `;
+                });
+
+                const tbodyMov = document.querySelector('#tablaMovimientosCarbon tbody');
+                tbodyMov.innerHTML = '';
+                r.movimientos.forEach(m => {
+                    tbodyMov.innerHTML += `
+                        <tr>
+                            <td>${new Date(m.fecha).toLocaleString()}</td>
+                            <td><b>${m.tipo_movimiento}</b></td>
+                            <td>${m.proveedor}</td>
+                            <td>${m.codigo_lote || '-'}</td>
+                            <td>${m.peso_seco_kg} kg</td>
+                            <td>${m.observaciones || '-'}</td>
+                            <td>${m.usuario_registro}</td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (err) {
+            console.error('Error al cargar movimientos de carbón:', err);
+        }
     }
 
     window.addEventListener('DOMContentLoaded', () => {
