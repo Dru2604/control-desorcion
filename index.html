@@ -578,7 +578,6 @@
     function cargarImagenProporcional(url) {
         return new Promise((resolve) => {
             const img = new Image();
-            img.crossOrigin = 'Anonymous';
             img.onload = function () {
                 const anchoOriginal = this.width;
                 const altoOriginal = this.height;
@@ -612,21 +611,21 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
-        // Intenta cargar la imagen 'encabezado.png' o 'encabezado.jpg' respetando la proporción
-        let imgObj = await cargarImagenProporcional('encabezado.png');
-        if (!imgObj) {
-            imgObj = await cargarImagenProporcional('encabezado.jpg');
-        }
-
-        let altoHeader = 35; // Alto por defecto en mm
+        // El archivo encabezado.png debe estar junto a index.html en GitHub.
+        const imgObj = await cargarImagenProporcional('./encabezado.png');
+        let altoHeader = 36.6; // Proporción de la imagen 1308 x 228 px en A4
 
         if (imgObj) {
             altoHeader = imgObj.alto;
             doc.addImage(imgObj.base64, 'PNG', 0, 0, imgObj.ancho, imgObj.alto);
         } else {
-            // Fallback en caso de que la imagen no esté presente
-            doc.setFillColor(34, 69, 67);
-            doc.rect(0, 0, 210, 35, 'F');
+            // Aviso visible si la imagen no se pudo cargar.
+            doc.setFillColor(255, 255, 255);
+            doc.rect(0, 0, 210, altoHeader, 'F');
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(180, 0, 0);
+            doc.text("No se encontró el archivo encabezado.png", 105, 18, { align: "center" });
         }
 
         // 2. TÍTULO PRINCIPAL CENTRADO (Ajustado dinámicamente debajo de la cabecera)
