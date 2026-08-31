@@ -664,7 +664,7 @@
         
         posY += 8;
 
-        // 5. TABLA DE DETALLE DE LOTES
+        // 5. TABLA DE DETALLE DE LOTES (CARBON ACTIVADO – X SACOS)
         const filasTabla = [];
         let pesoTotal = 0;
 
@@ -675,7 +675,7 @@
             
             filasTabla.push([
                 index + 1,
-                `CARBON ACTIVADO ${lote.codigo_lote} – ${cantSacos}`,
+                `CARBON ACTIVADO – ${cantSacos}`,
                 `${pesoBruto.toFixed(2)}`
             ]);
         });
