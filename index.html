@@ -236,16 +236,16 @@
         </div>
     </div>
 
-    <!-- 4. CARBÓN DESORBIDO Y MÁRGENES OPERATIVOS SEPARADOS -->
+    <!-- 4. CARBÓN DESORBIDO Y CONTROLES DE ENTREGA -->
     <div id="secDesorcion" class="seccion-app">
         <div class="card">
             <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
             <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Módulo exclusivo para Administración y Gerencia.</p>
 
-            <!-- TARJETAS SEPARADAS: PROCESO SECO VS DEVOLUCIÓN BRUTA -->
+            <!-- TARJETAS ACUMULADAS -->
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px;">
                 <div style="background: #2b6cb0; color: white; padding: 12px; border-radius: 8px; text-align: center;">
-                    <span style="font-size: 10px; text-transform: uppercase;">🔥 Por Enviar a Desorción</span>
+                    <span style="font-size: 10px; text-transform: uppercase;">🔥 Total a Desorción</span>
                     <h3 id="kpiMandarDesorcionSeco" style="font-size: 16px; margin-top: 5px;">0.00 kg (Seco)</h3>
                 </div>
                 <div style="background: #dd6b20; color: white; padding: 12px; border-radius: 8px; text-align: center;">
@@ -303,7 +303,12 @@
                 </div>
             </div>
 
-            <h4>📦 Lotes Procesados Pendientes de Devolución</h4>
+            <!-- MOTOR DE BÚSQUEDA Y CONTROL DE PENDIENTES POR PROVEEDOR -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 10px;">
+                <h4>📦 Lotes Procesados Pendientes de Devolución</h4>
+                <input type="text" id="srcPendienteProveedor" oninput="filtrarPendientes()" placeholder="🔍 Buscar por Proveedor..." style="width: 250px;" autocomplete="off">
+            </div>
+            
             <table id="tablaPendientesDev">
                 <thead>
                     <tr>
@@ -317,7 +322,14 @@
                 <tbody></tbody>
             </table>
 
+            <!-- MOTOR DE BÚSQUEDA DE HISTORIAL POR FECHAS Y PROVEEDOR -->
             <h4 style="margin-top: 25px;">📋 Historial de Movimientos</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; margin-bottom: 10px;">
+                <div><label style="font-size: 11px;">Buscar Proveedor:</label><input type="text" id="srcMovProveedor" oninput="filtrarMovimientos()" placeholder="Escribe un proveedor..." autocomplete="off"></div>
+                <div><label style="font-size: 11px;">Desde Fecha:</label><input type="date" id="srcMovFechaDesde" onchange="filtrarMovimientos()"></div>
+                <div><label style="font-size: 11px;">Hasta Fecha:</label><input type="date" id="srcMovFechaHasta" onchange="filtrarMovimientos()"></div>
+            </div>
+
             <table id="tablaMovimientosCarbon">
                 <thead>
                     <tr>
@@ -457,6 +469,8 @@
     const API_URL = 'https://backend-desorcion.onrender.com';
     let usuarioSesion = null;
     let cargasGlobales = [];
+    let pendientesGlobales = [];
+    let movimientosGlobales = [];
     let chartKgInstance = null;
     let chartValorInstance = null;
 
@@ -605,7 +619,6 @@
         document.getElementById('modalDevolucion').style.display = 'none';
     }
 
-    /* CONTROL ANTI DOBLE CLIC AL CONFIRMAR LA ENTREGA */
     document.getElementById('formModalDevolucion').addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -670,59 +683,29 @@
             const res = await fetch(`${API_URL}/api/carbon-desorbido`);
             const r = await res.json();
             if (r.success) {
+                pendientesGlobales = r.pendientesDevolucion;
+                movimientosGlobales = r.movimientos;
+
                 let sumPendientesBruto = 0, sumPendientesSeco = 0;
                 let sumIngresosDesorcion = 0, sumDevuelto = 0;
                 let sumIngresosVirgen = 0, sumSalidaVirgen = 0;
 
-                const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
-                tbodyPend.innerHTML = '';
-                r.pendientesDevolucion.forEach(p => {
-                    const bruto = parseFloat(p.peso_bruto || 0);
-                    const seco = parseFloat(p.peso_seco_neto || 0);
-                    
-                    sumPendientesBruto += bruto;
-                    sumPendientesSeco += seco;
-
-                    tbodyPend.innerHTML += `
-                        <tr>
-                            <td><b>${p.proveedor}</b></td>
-                            <td>${p.codigo_lote}</td>
-                            <td><b>${bruto.toFixed(2)} kg</b></td>
-                            <td><span class="badge" style="background:#e2e8f0; color:#2d3748;">${p.ubicacion_fisica}</span></td>
-                            <td><button onclick="abrirModalDevolucion('${p.lote_id}', '${p.proveedor}', '${p.codigo_lote}', '${bruto}')" class="btn-exito">Entregar al Cliente</button></td>
-                        </tr>
-                    `;
+                pendientesGlobales.forEach(p => {
+                    sumPendientesBruto += parseFloat(p.peso_bruto || 0);
+                    sumPendientesSeco += parseFloat(p.peso_seco_neto || 0);
                 });
 
-                const tbodyMov = document.querySelector('#tablaMovimientosCarbon tbody');
-                tbodyMov.innerHTML = '';
-                r.movimientos.forEach(m => {
+                movimientosGlobales.forEach(m => {
                     const peso = parseFloat(m.peso_seco_kg || 0);
-                    
                     if (m.tipo_movimiento === 'ENTRADA_DESORCION') sumIngresosDesorcion += peso;
                     if (m.tipo_movimiento === 'INGRESO_VIRGEN') sumIngresosVirgen += peso;
                     if (m.tipo_movimiento === 'DEVOLUCION_CLIENTE') sumDevuelto += peso;
                     if (m.tipo_movimiento === 'VENTA_VIRGEN' || m.tipo_movimiento === 'PRESTAMO_VIRGEN') sumSalidaVirgen += peso;
-
-                    const btnPdf = (m.tipo_movimiento === 'DEVOLUCION_CLIENTE')
-                        ? `<button onclick="generarGuiaPDF({proveedor: '${m.proveedor}', codigo_lote: '${m.codigo_lote}', peso: ${peso}, observaciones: '${m.observaciones || ''}'})" class="btn-secundario" style="padding: 4px 8px; font-size: 11px;">📄 Imprimir Guía</button>`
-                        : '-';
-
-                    tbodyMov.innerHTML += `
-                        <tr>
-                            <td>${new Date(m.fecha).toLocaleString()}</td>
-                            <td><b>${m.tipo_movimiento}</b></td>
-                            <td>${m.proveedor}</td>
-                            <td>${m.codigo_lote || '-'}</td>
-                            <td>${peso.toFixed(2)} kg</td>
-                            <td>${m.observaciones || '-'}</td>
-                            <td>${m.usuario_registro}</td>
-                            <td>${btnPdf}</td>
-                        </tr>
-                    `;
                 });
 
-                // ACTUALIZAR MÁRGENES Y METRICAS INDEPENDIENTES
+                renderTablaPendientes(pendientesGlobales);
+                renderTablaMovimientos(movimientosGlobales);
+
                 document.getElementById('kpiMandarDesorcionSeco').innerText = `${sumPendientesSeco.toFixed(2)} kg`;
                 document.getElementById('kpiPorDevolverBruto').innerText = `${sumPendientesBruto.toFixed(2)} kg`;
 
@@ -737,6 +720,74 @@
                 document.getElementById('kpiDevueltoCliente').innerText = `${sumDevuelto.toFixed(2)} kg`;
             }
         } catch (err) { console.error('Error al cargar movimientos de carbón:', err); }
+    }
+
+    function renderTablaPendientes(lista) {
+        const tbodyPend = document.querySelector('#tablaPendientesDev tbody');
+        tbodyPend.innerHTML = '';
+        lista.forEach(p => {
+            const bruto = parseFloat(p.peso_bruto || 0);
+            tbodyPend.innerHTML += `
+                <tr>
+                    <td><b>${p.proveedor}</b></td>
+                    <td>${p.codigo_lote}</td>
+                    <td><b>${bruto.toFixed(2)} kg</b></td>
+                    <td><span class="badge" style="background:#e2e8f0; color:#2d3748;">${p.ubicacion_fisica}</span></td>
+                    <td><button onclick="abrirModalDevolucion('${p.lote_id}', '${p.proveedor}', '${p.codigo_lote}', '${bruto}')" class="btn-exito">Entregar al Cliente</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function renderTablaMovimientos(lista) {
+        const tbodyMov = document.querySelector('#tablaMovimientosCarbon tbody');
+        tbodyMov.innerHTML = '';
+        lista.forEach(m => {
+            const peso = parseFloat(m.peso_seco_kg || 0);
+            const btnPdf = (m.tipo_movimiento === 'DEVOLUCION_CLIENTE')
+                ? `<button onclick="generarGuiaPDF({proveedor: '${m.proveedor}', codigo_lote: '${m.codigo_lote}', peso: ${peso}, observaciones: '${m.observaciones || ''}'})" class="btn-secundario" style="padding: 4px 8px; font-size: 11px;">📄 Imprimir Guía</button>`
+                : '-';
+
+            tbodyMov.innerHTML += `
+                <tr>
+                    <td>${new Date(m.fecha).toLocaleString()}</td>
+                    <td><b>${m.tipo_movimiento}</b></td>
+                    <td>${m.proveedor}</td>
+                    <td>${m.codigo_lote || '-'}</td>
+                    <td>${peso.toFixed(2)} kg</td>
+                    <td>${m.observaciones || '-'}</td>
+                    <td>${m.usuario_registro}</td>
+                    <td>${btnPdf}</td>
+                </tr>
+            `;
+        });
+    }
+
+    function filtrarPendientes() {
+        const txt = document.getElementById('srcPendienteProveedor').value.toLowerCase();
+        const filtrados = pendientesGlobales.filter(p => p.proveedor.toLowerCase().includes(txt));
+        renderTablaPendientes(filtrados);
+    }
+
+    function filtrarMovimientos() {
+        const prov = document.getElementById('srcMovProveedor').value.toLowerCase();
+        const desde = document.getElementById('srcMovFechaDesde').value;
+        const hasta = document.getElementById('srcMovFechaHasta').value;
+
+        const filtrados = movimientosGlobales.filter(m => {
+            const matchProv = m.proveedor.toLowerCase().includes(prov);
+            const fechaMov = new Date(m.fecha).toISOString().split('T')[0];
+            
+            let matchDesde = true;
+            if (desde) matchDesde = fechaMov >= desde;
+
+            let matchHasta = true;
+            if (hasta) matchHasta = fechaMov <= hasta;
+
+            return matchProv && matchDesde && matchHasta;
+        });
+
+        renderTablaMovimientos(filtrados);
     }
 
     document.getElementById('formRetornoPlant').addEventListener('submit', async (e) => {
