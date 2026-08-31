@@ -599,15 +599,18 @@
 
         obtenerBase64Imagen('logo.jpeg', function (logoBase64) {
             
-            // 1. MEMBRETE SUPERIOR GEOMÉTRICO OPESUR
-            doc.setFillColor(202, 210, 211); // Gris (#CAD2D3)
-            doc.polygon([{ x: 0, y: 0 }, { x: 67, y: 0 }, { x: 80, y: 22 }, { x: 67, y: 44 }, { x: 0, y: 44 }], 'F');
+            // 1. MEMBRETE GEOMÉTRICO (Usando trazos compatibles nativos)
+            doc.setFillColor(202, 210, 211); // Gris
+            doc.rect(0, 0, 68, 44, 'F');
+            doc.triangle(68, 0, 80, 22, 68, 44, 'F');
 
-            doc.setFillColor(226, 203, 161); // Dorado (#E2CBA1)
-            doc.polygon([{ x: 0, y: 0 }, { x: 64, y: 0 }, { x: 77, y: 22 }, { x: 64, y: 44 }, { x: 0, y: 44 }], 'F');
+            doc.setFillColor(226, 203, 161); // Dorado
+            doc.rect(0, 0, 64, 44, 'F');
+            doc.triangle(64, 0, 76, 22, 64, 44, 'F');
 
-            doc.setFillColor(30, 62, 60); // Verde OPESUR (#1E3E3C)
-            doc.polygon([{ x: 0, y: 0 }, { x: 48, y: 0 }, { x: 57, y: 22 }, { x: 48, y: 44 }, { x: 0, y: 44 }], 'F');
+            doc.setFillColor(30, 62, 60); // Verde OPESUR
+            doc.rect(0, 0, 48, 44, 'F');
+            doc.triangle(48, 0, 57, 22, 48, 44, 'F');
 
             if (logoBase64) {
                 doc.addImage(logoBase64, 'PNG', 4, 4, 38, 36);
