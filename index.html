@@ -574,32 +574,48 @@
         }
     }
 
+    // CONVERTIDOR ROBUSTO DE IMAGEN A BASE64 DESDE RUTA LOCAL O DOMINIO
+    function obtenerBase64Local(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(this, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg', 0.95));
+            };
+            img.onerror = function () {
+                resolve(null);
+            };
+            img.src = url;
+        });
+    }
+
     // GENERADOR DEL ACTA OFICIAL DE RECEPCIÓN DE MINERAL
-    function generarActaRecepcionPDF(datos) {
+    async function generarActaRecepcionPDF(datos) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
-        // 1. ENCABEZADO VECTORIAL 100% COMPATIBLE CON JSPDF
-        doc.setFillColor(27, 67, 65); // Verde OPESUR
-        doc.rect(0, 0, 210, 45, 'F');
+        // Intentar obtener el archivo de imagen 'encabezado.jpg'
+        const headerBase64 = await obtenerBase64Local('encabezado.jpg');
 
-        doc.setFillColor(226, 203, 161); // Dorado / Beige
-        doc.rect(140, 0, 70, 45, 'F');
-
-        // Texto del Logo OPESUR
-        doc.setTextColor(226, 203, 161);
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(22);
-        doc.text("OPESUR", 22, 22);
-
-        doc.setFontSize(8);
-        doc.text("COMPAÑÍA DE OPERACIONES MINERAS DEL SUR SAC", 22, 29);
-
-        // Texto lateral sobre fondo dorado
-        doc.setTextColor(27, 67, 65);
-        doc.setFontSize(10);
-        doc.text("PLANTA DE ACOPIO", 175, 20, { align: "center" });
-        doc.text("Y DESORCIÓN", 175, 26, { align: "center" });
+        if (headerBase64) {
+            // Se dibuja el JPG exacto a 210mm x 45mm en la parte superior
+            doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 45);
+        } else {
+            // Respaldo de contingencia
+            doc.setFillColor(27, 67, 65);
+            doc.rect(0, 0, 210, 45, 'F');
+            doc.setTextColor(226, 203, 161);
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(22);
+            doc.text("OPESUR", 22, 22);
+            doc.setFontSize(8);
+            doc.text("COMPAÑÍA DE OPERACIONES MINERAS DEL SUR SAC", 22, 29);
+        }
 
         // 2. TÍTULO PRINCIPAL CENTRADO
         doc.setFont("helvetica", "bold");
@@ -699,17 +715,17 @@
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
         
-        // Columna Izquierda: Nombre dinámico del Proveedor
+        // Firma Proveedor
         doc.text("Firma y Sello de Recepción", 55, pieY + 4, { align: "center" });
         doc.text(`${proveedorNombre}`, 55, pieY + 8, { align: "center" });
 
-        // Columna Derecha: OPESUR
+        // Firma OPESUR
         doc.text("Firma y Sello de Recepción", 145, pieY + 4, { align: "center" });
         doc.text("CIA. DE OPERACIONES MINERAS DEL SUR SAC", 145, pieY + 8, { align: "center" });
         doc.setFont("helvetica", "bolditalic");
         doc.text("OPESUR", 145, pieY + 12, { align: "center" });
 
-        // 8. PIE DE PÁGINA CORPORATIVO
+        // 8. PIE DE PÁGINA
         const pageHeight = doc.internal.pageSize.height;
         doc.setFillColor(27, 67, 65);
         doc.rect(0, pageHeight - 22, 210, 22, 'F');
@@ -1097,7 +1113,7 @@
             if (r.success) {
                 alert('Carga guardada exitosamente.');
                 
-                generarActaRecepcionPDF({
+                await generarActaRecepcionPDF({
                     fecha: fecha_operacion ? new Date(fecha_operacion).toLocaleDateString('es-PE') : new Date().toLocaleDateString('es-PE'),
                     proveedor, ruc_proveedor, codigo_carga, numero_chaparra, guia_remision, guia_transportista, lotes
                 });
@@ -1190,8 +1206,8 @@
         });
     }
 
-    function reimprimirActa(carga) {
-        generarActaRecepcionPDF({
+    async function reimprimirActa(carga) {
+        await generarActaRecepcionPDF({
             fecha: new Date(carga.fecha).toLocaleDateString('es-PE'),
             proveedor: carga.proveedor,
             ruc_proveedor: carga.ruc_proveedor,
