@@ -65,6 +65,7 @@
         input, select { width: 100%; padding: 9px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; }
         button { background: #3182ce; color: white; border: none; padding: 10px 15px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 6px; }
         button:hover { background: #2b6cb0; }
+        button:disabled { background: #a0aec0 !important; cursor: not-allowed; }
         .btn-secundario { background: #718096; font-size: 12px; }
         .btn-exito { background: #38a169; font-size: 12px; }
         .btn-peligro { background: #e53e3e; }
@@ -524,7 +525,6 @@
         if (btn) btn.classList.add('active');
     }
 
-    /* FUNCIÓN PARA VACIAR VACIANDO EN CASCADA EN POSTGRES */
     async function borrarHistorial() {
         if (!confirm('⚠️ ¿Estás seguro de que deseas vaciar TODO el historial de cargas, lotes y movimientos?\nSe reiniciará la base de datos para pruebas.')) {
             return;
@@ -550,7 +550,6 @@
         }
     }
 
-    /* GENERADOR Y DESCARGADOR DE GUÍA DE REMISIÓN PDF */
     function generarGuiaPDF(datosEntrega) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -590,8 +589,13 @@
         document.getElementById('modalDevolucion').style.display = 'none';
     }
 
+    /* CONTROL ANTI DOBLE CLIC AL CONFIRMAR LA ENTREGA */
     document.getElementById('formModalDevolucion').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        if (btnSubmit.disabled) return;
+
         const lote_id = document.getElementById('modalLoteId').value;
         const proveedor = document.getElementById('modalProveedor').value;
         const codigo_lote = document.getElementById('modalLote').value;
@@ -608,6 +612,10 @@
             alert('Ingresa una cantidad válida mayor a 0 kg.');
             return;
         }
+
+        btnSubmit.disabled = true;
+        const textoOriginal = btnSubmit.innerText;
+        btnSubmit.innerText = 'Procesando...';
 
         try {
             const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
@@ -633,7 +641,12 @@
             } else {
                 alert(r.error || 'Error al procesar la entrega.');
             }
-        } catch (err) { alert('Error de conexión.'); }
+        } catch (err) { 
+            alert('Error de conexión.'); 
+        } finally {
+            btnSubmit.disabled = false;
+            btnSubmit.innerText = textoOriginal;
+        }
     });
 
     async function cargarCarbonDesorbido() {
@@ -698,10 +711,16 @@
 
     document.getElementById('formRetornoPlant').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        if (btnSubmit.disabled) return;
+
         const proveedor = document.getElementById('retProveedor').value;
         const codigo_lote = document.getElementById('retLote').value;
         const peso_seco_kg = parseFloat(document.getElementById('retPeso').value);
         const observaciones = document.getElementById('retObs').value;
+
+        btnSubmit.disabled = true;
 
         try {
             const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
@@ -717,15 +736,25 @@
                 document.getElementById('formRetornoPlant').reset();
                 cargarCarbonDesorbido();
             }
-        } catch (err) { alert('Error al guardar.'); }
+        } catch (err) { 
+            alert('Error al guardar.'); 
+        } finally {
+            btnSubmit.disabled = false;
+        }
     });
 
     document.getElementById('formSalidaVirgen').addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const btnSubmit = e.target.querySelector('button[type="submit"]');
+        if (btnSubmit.disabled) return;
+
         const tipo_movimiento = document.getElementById('virgenTipo').value;
         const proveedor = document.getElementById('virgenCliente').value;
         const peso_seco_kg = parseFloat(document.getElementById('virgenPeso').value);
         const observaciones = document.getElementById('virgenObs').value;
+
+        btnSubmit.disabled = true;
 
         try {
             const res = await fetch(`${API_URL}/api/carbon-desorbido`, {
@@ -741,7 +770,11 @@
                 document.getElementById('formSalidaVirgen').reset();
                 cargarCarbonDesorbido();
             }
-        } catch (err) { alert('Error al guardar.'); }
+        } catch (err) { 
+            alert('Error al guardar.'); 
+        } finally {
+            btnSubmit.disabled = false;
+        }
     });
 
     function generarCamposMuestras(btn) {
@@ -792,7 +825,10 @@
     document.getElementById('formCarga').addEventListener('submit', async (e) => {
         e.preventDefault();
         const btnGuardar = document.getElementById('btnGuardar');
-        btnGuardar.disabled = true; btnGuardar.innerText = 'Guardando...';
+        if (btnGuardar.disabled) return;
+
+        btnGuardar.disabled = true; 
+        btnGuardar.innerText = 'Guardando...';
 
         const codigo_carga = document.getElementById('codigo_carga').value;
         const proveedor = document.getElementById('proveedor').value;
