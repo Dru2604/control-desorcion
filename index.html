@@ -129,6 +129,7 @@
             <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)"><span class="icon">📝</span><span class="text-btn">Registrar Carga</span></button>
             <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)"><span class="icon">📋</span><span class="text-btn">Historial General</span></button>
             <button class="nav-btn" onclick="mostrarSeccion('secDeclaracion', this)"><span class="icon">📜</span><span class="text-btn">DJ Transportista</span></button>
+            <button class="nav-btn" onclick="mostrarSeccion('secCertificado', this)"><span class="icon">📄</span><span class="text-btn">Cert. Procedencia</span></button>
             <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none;"><span class="icon">🔄</span><span class="text-btn">Carbón Desorbido</span></button>
             <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none;"><span class="icon">📈</span><span class="text-btn">Reportes Mensuales</span></button>
             <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none;"><span class="icon">📊</span><span class="text-btn">Control Maestro</span></button>
@@ -343,7 +344,109 @@
         </div>
     </div>
 
-    <!-- 4. CARBÓN DESORBIDO -->
+    <!-- 4. CERTIFICADO DE PROCEDENCIA DEL MINERAL -->
+    <div id="secCertificado" class="seccion-app">
+        <div class="card">
+            <h3>📄 Generar y Registrar Certificado de Procedencia del Mineral Aurífero</h3>
+            <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Ingresa la información legal para generar el certificado en PDF y almacenarlo en el historial.</p>
+
+            <form id="formCertificadoProcedencia" autocomplete="off">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+                    
+                    <!-- Productor / Minero -->
+                    <div class="campo">
+                        <label>Nombre del Declarante / Minero:</label>
+                        <input type="text" id="cpNombreDeclarante" required placeholder="Ej: Wilber Ccoto Ramos">
+                    </div>
+                    <div class="campo">
+                        <label>DNI del Declarante:</label>
+                        <input type="text" id="cpDniDeclarante" required placeholder="Ej: 24582514">
+                    </div>
+                    <div class="campo">
+                        <label>RUC del Declarante:</label>
+                        <input type="text" id="cpRucDeclarante" required placeholder="Ej: 10245825141">
+                    </div>
+                    <div class="campo" style="grid-column: span 2;">
+                        <label>Domicilio Fiscal:</label>
+                        <input type="text" id="cpDomicilioFiscal" required placeholder="Ej: Cal. Arequipa, Coo. El Carmen Mz. A Lote 28">
+                    </div>
+                    <div class="campo">
+                        <label>Condición Minera:</label>
+                        <select id="cpCondicionMinero" required>
+                            <option value="Pequeño Productor Minero (&quot;PPM&quot;)">Pequeño Productor Minero ("PPM")</option>
+                            <option value="Productor Minero Artesanal (&quot;PMA&quot;)">Productor Minero Artesanal ("PMA")</option>
+                        </select>
+                    </div>
+
+                    <!-- Concesión Minera -->
+                    <div class="campo">
+                        <label>Nombre de la Concesión Minera:</label>
+                        <input type="text" id="cpNombreConcesion" required placeholder="Ej: POSCO">
+                    </div>
+                    <div class="campo">
+                        <label>Código Único de Concesión:</label>
+                        <input type="text" id="cpCodigoConcesion" required placeholder="Ej: 01000002Y01">
+                    </div>
+                    <div class="campo">
+                        <label>Distrito:</label>
+                        <input type="text" id="cpDistrito" required placeholder="Ej: MARIANO NICOLAS VALCARCEL">
+                    </div>
+                    <div class="campo">
+                        <label>Provincia:</label>
+                        <input type="text" id="cpProvincia" required placeholder="Ej: CAMANA">
+                    </div>
+                    <div class="campo">
+                        <label>Departamento:</label>
+                        <input type="text" id="cpDepartamento" required placeholder="Ej: AREQUIPA">
+                    </div>
+
+                    <!-- Firmante -->
+                    <div class="campo">
+                        <label>Nombres del Firmante:</label>
+                        <input type="text" id="cpNombresFirmante" required placeholder="Ej: Keler Edgar">
+                    </div>
+                    <div class="campo">
+                        <label>Apellidos del Firmante:</label>
+                        <input type="text" id="cpApellidosFirmante" required placeholder="Ej: Torres Carhuas">
+                    </div>
+                    <div class="campo">
+                        <label>DNI del Firmante:</label>
+                        <input type="text" id="cpDniFirmante" required placeholder="Ej: 45396376">
+                    </div>
+                    <div class="campo">
+                        <label>Fecha de Emisión del Certificado:</label>
+                        <input type="date" id="cpFechaEmision" required>
+                    </div>
+
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button type="submit" class="btn-exito" id="btnGuardarCp">💾 Guardar y Descargar Certificado (PDF)</button>
+                </div>
+            </form>
+
+            <h4 style="margin-top: 30px;">📋 Historial de Certificados de Procedencia</h4>
+            <div style="margin-top: 10px; margin-bottom: 10px;">
+                <input type="text" id="srcCpTexto" oninput="filtrarCertificados()" placeholder="🔍 Buscar por Minero, Concesión, DNI o Firmante..." style="width: 100%; padding: 8px;" autocomplete="off">
+            </div>
+
+            <table id="tablaCertificadosHistorial">
+                <thead>
+                    <tr>
+                        <th>Fecha Reg.</th>
+                        <th>Declarante / Minero</th>
+                        <th>Concesión</th>
+                        <th>Firmante</th>
+                        <th>DNI Firmante</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 5. CARBÓN DESORBIDO -->
     <div id="secDesorcion" class="seccion-app">
         <div class="card">
             <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
@@ -452,7 +555,7 @@
         </div>
     </div>
 
-    <!-- 5. REPORTES MENSUALES -->
+    <!-- 6. REPORTES MENSUALES -->
     <div id="secReportes" class="seccion-app">
         <div class="card" id="areaReporteImpresion">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -495,7 +598,7 @@
         </div>
     </div>
 
-    <!-- 6. CONTROL MAESTRO GERENCIA -->
+    <!-- 7. CONTROL MAESTRO GERENCIA -->
     <div id="secGerencia" class="seccion-app">
         <div class="card">
             <h3>📊 Control Maestro de Carbón y Valorización Financiera</h3>
@@ -576,6 +679,7 @@
     let pendientesGlobales = [];
     let movimientosGlobales = [];
     let declaracionesGlobales = [];
+    let certificadosGlobales = [];
     let chartKgInstance = null;
     let chartValorInstance = null;
 
@@ -630,6 +734,7 @@
 
         cargarCargas();
         cargarDeclaraciones();
+        cargarCertificados();
     }
 
     function cerrarSesion() {
@@ -647,6 +752,7 @@
         if (id === 'secDesorcion') cargarCarbonDesorbido();
         if (id === 'secGerencia') cargarControlMaestroGerencia();
         if (id === 'secDeclaracion') cargarDeclaraciones();
+        if (id === 'secCertificado') cargarCertificados();
 
         if (btn) btn.classList.add('active');
     }
@@ -669,6 +775,7 @@
                 cargarCargas();
                 cargarCarbonDesorbido();
                 cargarDeclaraciones();
+                cargarCertificados();
             } else {
                 alert(r.error || 'Error al vaciar el historial.');
             }
@@ -1108,6 +1215,217 @@
 
     async function reimprimirDj(djData) {
         await generarPdfDeclaracion(djData);
+    }
+
+    // CERTIFICADO DE PROCEDENCIA MINERA
+    async function generarPdfCertificado(datos) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        let posY = 25;
+
+        // TÍTULO CON SUBRAYADO
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(0, 0, 0);
+        doc.text("CERTIFICADO DE PROCEDENCIA DEL MINERAL AURÍFERO", 105, posY, { align: "center" });
+        doc.setLineWidth(0.5);
+        doc.line(48, posY + 1, 162, posY + 1);
+
+        // PÁRRAFO DE PRESENTACIÓN Y DECLARACIÓN
+        posY += 12;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9.5);
+
+        const textoDeclarante = `Yo, ${datos.nombre_declarante} identificado con DNI No. ${datos.dni_declarante} con RUC No. ${datos.ruc_declarante} con domicilio fiscal en ${datos.domicilio_fiscal} declaro bajo juramento ser ${datos.condicion_minero} y realizar actividad minera artesanal en la concesión minera denominada ${datos.nombre_concesion.toUpperCase()}, con Código Único No. ${datos.codigo_concesion} ubicada en el distrito de ${datos.distrito.toUpperCase()} provincia de ${datos.provincia.toUpperCase()} el departamento de ${datos.departamento.toUpperCase()}, en adelante la "Concesión Minera".`;
+        
+        const lineasPresentacion = doc.splitTextToSize(textoDeclarante, 165);
+        doc.text(lineasPresentacion, 22, posY);
+        posY += (lineasPresentacion.length * 4.8) + 4;
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Asimismo, DECLARO BAJO JURAMENTO que:", 22, posY);
+
+        const anchoMax = 158;
+        posY += 8;
+
+        // NUMERALES LEGALES
+        doc.setFont("helvetica", "normal");
+
+        let txt1 = `1.  El mineral aurífero que extraigo de la Concesión Minera ha sido obtenido de manera legal, en aplicación de las normas del proceso de formalización de la minería informal al cual me he acogido y me encuentro con inscripción vigente en el Registro Integral de Formalización de la Minería Informal - REINFO; por tanto, no provienen de la minería ilegal ni de cualquier otro acto que pudiera ser vinculado directa o indirectamente a dicha actividad.`;
+        let lineas1 = doc.splitTextToSize(txt1, anchoMax);
+        doc.text(lineas1, 22, posY);
+        posY += (lineas1.length * 4.4) + 3;
+
+        let txt2 = `2.  No participo, ni fomento, ni financio actividades de minería ilegal, ni de cualquier otra actividad delictiva, o actividades que tenga por objeto dedicarse al lavado de activos. Cuento con las licencias, permisos y autorizaciones, excepcionales que son requeridos por la legislación vigente para el desarrollo de actividades mineras, de acuerdo con la naturaleza y localización donde éstas se van o vienen desarrollando.`;
+        let lineas2 = doc.splitTextToSize(txt2, anchoMax);
+        doc.text(lineas2, 22, posY);
+        posY += (lineas2.length * 4.4) + 3;
+
+        let txt3 = `3.  Garantizo que para llevar a cabo mi actividad minera no utilizo dragas ni equipos similares que se encuentran prohibidos por la legislación peruana en los cuerpos de agua (ríos, lagos, lagunas, cochas, humedales, aguajales, entre otros). Asimismo, no utilizo bienes, maquinarias, equipos ni insumos para el desarrollo de actividades mineras ilegales.`;
+        let lineas3 = doc.splitTextToSize(txt3, anchoMax);
+        doc.text(lineas3, 22, posY);
+        posY += (lineas3.length * 4.4) + 3;
+
+        let txt4 = `4.  No se encuentran en procesos penales vigentes por la comisión de los delitos tipificados en el Decreto Legislativo No. 1106-2012 o sus modificatorias, o los cometidos por organizaciones criminales.`;
+        let lineas4 = doc.splitTextToSize(txt4, anchoMax);
+        doc.text(lineas4, 22, posY);
+        posY += (lineas4.length * 4.4) + 3;
+
+        let txt5 = `5.  No me relaciono con ninguna persona que esté relacionada con el lavado de activos y/o financiamiento del terrorismo, o minería ilegal.`;
+        let lineas5 = doc.splitTextToSize(txt5, anchoMax);
+        doc.text(lineas5, 22, posY);
+        posY += (lineas5.length * 4.4) + 5;
+
+        // PÁRRAFO DE EXONERACIÓN Y RESPONSABILIDAD
+        let txtExencion = `En virtud de lo declarado en este documento, eximo de toda responsabilidad a COMPAÑIA DE OPERACIONES MINERAS DEL SUR S.A.C. , sus afiliadas, subsidiarias o vinculadas, respecto de la obtención de los minerales que extraigo de la Concesión Minera, adquiero, comercializó y exporto; por tanto, declaro asumir todas las obligaciones y responsabilidades ante las autoridades del Perú y ante COMPAÑIA DE OPERACIONES MINERAS DEL SUR S.A.C. que se pudiera derivar de una declaración considerada incompleta, inexacta y/o falsa.`;
+        let lineasEx = doc.splitTextToSize(txtExencion, 165);
+        doc.text(lineasEx, 22, posY);
+        posY += (lineasEx.length * 4.4) + 5;
+
+        let txtCierre = `En fe de lo cual suscribo la presente declaración jurada, asumiendo mi responsabilidad en caso de falsedad o inexactitud de la misma.`;
+        let lineasCierre = doc.splitTextToSize(txtCierre, 165);
+        doc.text(lineasCierre, 22, posY);
+        posY += (lineasCierre.length * 4.4) + 8;
+
+        const fechaEmisionEspanol = formatearFechaEspanol(datos.fecha_emision);
+        doc.text(`Chaparra, ${fechaEmisionEspanol}`, 22, posY);
+
+        // SECCIÓN DE FIRMA Y HUELLA DIGITAL
+        posY += 16;
+        doc.setFont("helvetica", "bold");
+        doc.text("Firma:", 22, posY);
+        doc.setLineWidth(0.4);
+        doc.line(38, posY, 105, posY);
+
+        // RECUADRO DE HUELLA DIGITAL
+        doc.rect(122, posY - 8, 22, 28);
+        doc.setFontSize(7.5);
+        doc.setFont("helvetica", "normal");
+        doc.text("(Huella Digital)", 133, posY + 23, { align: "center" });
+
+        // DATOS DEL FIRMANTE
+        doc.setFontSize(9.5);
+        posY += 10;
+        doc.setFont("helvetica", "bold");
+        doc.text(`Nombres: `, 22, posY);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${datos.nombres_firmante}`, 42, posY);
+
+        posY += 6;
+        doc.setFont("helvetica", "bold");
+        doc.text(`Apellidos: `, 22, posY);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${datos.apellidos_firmante}`, 42, posY);
+
+        posY += 6;
+        doc.setFont("helvetica", "bold");
+        doc.text(`DNI: `, 22, posY);
+        doc.setFont("helvetica", "normal");
+        doc.text(`${datos.dni_firmante}`, 32, posY);
+
+        doc.save(`Certificado_Procedencia_${datos.dni_declarante}.pdf`);
+    }
+
+    document.getElementById('formCertificadoProcedencia').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const btnGuardar = document.getElementById('btnGuardarCp');
+        if (btnGuardar.disabled) return;
+
+        btnGuardar.disabled = true;
+        btnGuardar.innerText = 'Guardando...';
+
+        const payload = {
+            nombre_declarante: document.getElementById('cpNombreDeclarante').value,
+            dni_declarante: document.getElementById('cpDniDeclarante').value,
+            ruc_declarante: document.getElementById('cpRucDeclarante').value,
+            domicilio_fiscal: document.getElementById('cpDomicilioFiscal').value,
+            condicion_minero: document.getElementById('cpCondicionMinero').value,
+            nombre_concesion: document.getElementById('cpNombreConcesion').value,
+            codigo_concesion: document.getElementById('cpCodigoConcesion').value,
+            distrito: document.getElementById('cpDistrito').value,
+            provincia: document.getElementById('cpProvincia').value,
+            departamento: document.getElementById('cpDepartamento').value,
+            nombres_firmante: document.getElementById('cpNombresFirmante').value,
+            apellidos_firmante: document.getElementById('cpApellidosFirmante').value,
+            dni_firmante: document.getElementById('cpDniFirmante').value,
+            fecha_emision: document.getElementById('cpFechaEmision').value,
+            usuario_registro: usuarioSesion ? usuarioSesion.usuario : 'Sistema'
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/api/certificados`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const r = await res.json();
+            if (r.success) {
+                alert('Certificado de Procedencia guardado correctamente.');
+                await generarPdfCertificado(payload);
+                document.getElementById('formCertificadoProcedencia').reset();
+                cargarCertificados();
+            } else {
+                alert(r.error || 'Error al guardar el certificado.');
+            }
+        } catch (err) {
+            alert('Error de conexión con el servidor.');
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerText = '💾 Guardar y Descargar Certificado (PDF)';
+        }
+    });
+
+    async function cargarCertificados() {
+        try {
+            const res = await fetch(`${API_URL}/api/certificados`);
+            const r = await res.json();
+            if (r.success) {
+                certificadosGlobales = r.data;
+                renderTablaCertificados(certificadosGlobales);
+            }
+        } catch (err) {
+            console.error('Error al cargar historial CP:', err);
+        }
+    }
+
+    function renderTablaCertificados(lista) {
+        const tbody = document.querySelector('#tablaCertificadosHistorial tbody');
+        tbody.innerHTML = '';
+
+        lista.forEach(cp => {
+            const fechaReg = new Date(cp.created_at).toLocaleString();
+            const cpObj = JSON.stringify(cp).replace(/"/g, '&quot;');
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${fechaReg}</td>
+                    <td><b>${cp.nombre_declarante}</b><br><small style="color:#718096;">DNI: ${cp.dni_declarante}</small></td>
+                    <td><span class="badge" style="background:#edf2f7; color:#2b6cb0;">${cp.nombre_concesion} (${cp.codigo_concesion})</span></td>
+                    <td>${cp.nombres_firmante} ${cp.apellidos_firmante}</td>
+                    <td>${cp.dni_firmante}</td>
+                    <td><button onclick="reimprimirCp(${cpObj})" class="btn-secundario" style="padding: 4px 8px; font-size: 11px;">📄 Reimprimir PDF</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function filtrarCertificados() {
+        const txt = document.getElementById('srcCpTexto').value.toLowerCase();
+        const filtrados = certificadosGlobales.filter(cp => 
+            cp.nombre_declarante.toLowerCase().includes(txt) ||
+            cp.nombre_concesion.toLowerCase().includes(txt) ||
+            cp.dni_declarante.toLowerCase().includes(txt) ||
+            cp.nombres_firmante.toLowerCase().includes(txt) ||
+            cp.apellidos_firmante.toLowerCase().includes(txt)
+        );
+        renderTablaCertificados(filtrados);
+    }
+
+    async function reimprimirCp(cpData) {
+        await generarPdfCertificado(cpData);
     }
 
     function abrirModalDevolucion(id, proveedor, lote, pesoBruto) {
