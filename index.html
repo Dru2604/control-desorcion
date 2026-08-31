@@ -574,165 +574,166 @@
         }
     }
 
-    // CONVERTIR IMAGEN A BASE64
-    function obtenerBase64Imagen(url, callback) {
-        const img = new Image();
-        img.crossOrigin = 'Anonymous';
-        img.onload = function () {
-            const canvas = document.createElement('canvas');
-            canvas.width = this.width;
-            canvas.height = this.height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(this, 0, 0);
-            callback(canvas.toDataURL('image/jpeg', 0.95));
-        };
-        img.onerror = function () {
-            callback(null);
-        };
-        img.src = url;
+    // CONVERTIR IMAGEN A BASE64 MEDIANTE PROMESAS
+    function cargarImagenBase64(url) {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(this, 0, 0);
+                resolve(canvas.toDataURL('image/jpeg', 0.95));
+            };
+            img.onerror = function () {
+                console.error("No se pudo cargar la imagen:", url);
+                resolve(null);
+            };
+            img.src = url;
+        });
     }
 
     // GENERADOR DEL ACTA OFICIAL DE RECEPCIÓN DE MINERAL
-    function generarActaRecepcionPDF(datos) {
+    async function generarActaRecepcionPDF(datos) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
-        // 1. ENCABEZADO JPG DESDE EL ARCHIVO LOCAL 'encabezado.jpg'
-        obtenerBase64Imagen('encabezado.jpg', function (headerBase64) {
+        // Esperar la carga de la imagen
+        const headerBase64 = await cargarImagenBase64('encabezado.jpg');
+        const footerBase64 = await cargarImagenBase64('pie.png');
+
+        // 1. DIBUJAR ENCABEZADO
+        if (headerBase64) {
+            doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 45);
+        }
+
+        // 2. TÍTULO PRINCIPAL CENTRADO
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13.5);
+        doc.setTextColor(80, 80, 80);
+        doc.text("ACTA DE RECEPCIÓN DE MINERAL", 105, 56, { align: "center" });
+
+        // 3. TEXTO LEGAL Y CONDICIONES
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        doc.setTextColor(0, 0, 0);
+        
+        const textoMembrete = "Mediante el presente documento y de acuerdo con las condiciones comerciales establecidas, se da conformidad a la recepción de Mineral en Carbón Activado dentro de las instalaciones de la empresa CIA DE OPERACIONES MINERAS DEL SUR con RUC 20612160652, ubicado en Nro. SN. Sector Pampa Huanangurume - Chaparra - Caraveli - Arequipa.";
+        const lineasMembrete = doc.splitTextToSize(textoMembrete, 166);
+        doc.text(lineasMembrete, 22, 66);
+
+        // 4. METADATOS DE LA CARGA
+        doc.setFontSize(9);
+        let y = 86;
+        const fechaActual = datos.fecha || new Date().toLocaleDateString('es-PE');
+        const horaActual = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+        const proveedorNombre = datos.proveedor ? datos.proveedor.toUpperCase() : '-';
+
+        doc.setFont("helvetica", "bold"); doc.text("Fecha", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${fechaActual}`, 60, y); y += 5.5;
+        doc.setFont("helvetica", "bold"); doc.text("Hora", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${horaActual}`, 60, y); y += 5.5;
+        doc.setFont("helvetica", "bold"); doc.text("PROVEEDOR", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${proveedorNombre}`, 60, y); y += 5.5;
+        doc.setFont("helvetica", "bold"); doc.text("RUC", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.ruc_proveedor || '-'}`, 60, y); y += 5.5;
+        doc.setFont("helvetica", "bold"); doc.text("N° de Operación", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.codigo_carga}`, 60, y); y += 5.5;
+        doc.setFont("helvetica", "bold"); doc.text("N° de Chaparra", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.numero_chaparra || '-'}`, 60, y); y += 5.5;
+        
+        doc.setFont("helvetica", "bold");
+        doc.text("GUIA DE REMISION", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_remision || '-'}`, 60, y);
+        doc.setFont("helvetica", "bold"); doc.text("GT:", 114, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_transportista || '-'}`, 122, y); 
+        
+        y += 8;
+
+        // 5. TABLA DE DETALLE DE LOTES
+        const filasTabla = [];
+        let pesoTotal = 0;
+
+        datos.lotes.forEach((lote, index) => {
+            const pesoBruto = parseFloat(lote.peso_bruto || 0);
+            pesoTotal += pesoBruto;
+            const cantSacos = lote.cantidad_sacos ? `${lote.cantidad_sacos} SACOS` : 'NUMERO DE SACOS';
             
-            if (headerBase64) {
-                doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 45);
-            }
-
-            // 2. TÍTULO PRINCIPAL CENTRADO
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(13.5);
-            doc.setTextColor(80, 80, 80);
-            doc.text("ACTA DE RECEPCIÓN DE MINERAL", 105, 56, { align: "center" });
-
-            // 3. TEXTO LEGAL Y CONDICIONES (Centrado dentro de márgenes de 22mm)
-            doc.setFont("helvetica", "normal");
-            doc.setFontSize(8.5);
-            doc.setTextColor(0, 0, 0);
-            
-            const textoMembrete = "Mediante el presente documento y de acuerdo con las condiciones comerciales establecidas, se da conformidad a la recepción de Mineral en Carbón Activado dentro de las instalaciones de la empresa CIA DE OPERACIONES MINERAS DEL SUR con RUC 20612160652, ubicado en Nro. SN. Sector Pampa Huanangurume - Chaparra - Caraveli - Arequipa.";
-            const lineasMembrete = doc.splitTextToSize(textoMembrete, 166);
-            doc.text(lineasMembrete, 22, 66);
-
-            // 4. METADATOS DE LA CARGA (Alineación exacta)
-            doc.setFontSize(9);
-            let y = 86;
-            const fechaActual = datos.fecha || new Date().toLocaleDateString('es-PE');
-            const horaActual = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-            const proveedorNombre = datos.proveedor ? datos.proveedor.toUpperCase() : '-';
-
-            doc.setFont("helvetica", "bold"); doc.text("Fecha", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${fechaActual}`, 60, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("Hora", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${horaActual}`, 60, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("PROVEEDOR", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${proveedorNombre}`, 60, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("RUC", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.ruc_proveedor || '-'}`, 60, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("N° de Operación", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.codigo_carga}`, 60, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("N° de Chaparra", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.numero_chaparra || '-'}`, 60, y); y += 5.5;
-            
-            doc.setFont("helvetica", "bold");
-            doc.text("GUIA DE REMISION", 22, y); doc.text(":", 56, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_remision || '-'}`, 60, y);
-            doc.setFont("helvetica", "bold"); doc.text("GT:", 114, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_transportista || '-'}`, 122, y); 
-            
-            y += 8;
-
-            // 5. TABLA DE DETALLE DE LOTES CENTRADA
-            const filasTabla = [];
-            let pesoTotal = 0;
-
-            datos.lotes.forEach((lote, index) => {
-                const pesoBruto = parseFloat(lote.peso_bruto || 0);
-                pesoTotal += pesoBruto;
-                const cantSacos = lote.cantidad_sacos ? `${lote.cantidad_sacos} SACOS` : 'NUMERO DE SACOS';
-                
-                filasTabla.push([
-                    index + 1,
-                    `CARBON ACTIVADO ${lote.codigo_lote} – ${cantSacos}`,
-                    `${pesoBruto.toFixed(2)}`
-                ]);
-            });
-
-            while (filasTabla.length < 7) {
-                filasTabla.push(['', '', '']);
-            }
-
-            doc.autoTable({
-                startY: y,
-                head: [['Item', 'Descripción', 'Peso Kg']],
-                body: filasTabla,
-                theme: 'grid',
-                headStyles: { 
-                    fillColor: [255, 255, 255], 
-                    textColor: [0, 0, 0], 
-                    fontStyle: 'bold', 
-                    halign: 'center', 
-                    lineWidth: 0.3, 
-                    lineColor: [0, 0, 0] 
-                },
-                bodyStyles: { 
-                    textColor: [0, 0, 0], 
-                    lineWidth: 0.3, 
-                    lineColor: [0, 0, 0] 
-                },
-                columnStyles: {
-                    0: { cellWidth: 18, halign: 'center' },
-                    1: { cellWidth: 110, halign: 'left' },
-                    2: { cellWidth: 38, halign: 'right' }
-                },
-                margin: { left: 22, right: 22 }
-            });
-
-            // 6. TOTALIZADOR RECTANGULAR
-            let finalY = doc.lastAutoTable.finalY + 6;
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(10);
-            doc.text("Total Kg.", 118, finalY);
-            doc.rect(136, finalY - 4, 34, 6);
-            doc.text(`${pesoTotal.toFixed(2)}`, 168, finalY, { align: "right" });
-
-            // 7. BLOQUE DE FIRMAS PARALELO Y DINÁMICO
-            const pieY = finalY + 30;
-            
-            doc.setLineWidth(0.4);
-            doc.line(25, pieY, 85, pieY);   // Firma Proveedor
-            doc.line(115, pieY, 175, pieY); // Firma OPESUR
-
-            doc.setFontSize(8);
-            doc.setFont("helvetica", "bold");
-            
-            // Nombre dinámico del Proveedor bajo la firma
-            doc.text("Firma y Sello de Recepción", 55, pieY + 4, { align: "center" });
-            doc.text(`${proveedorNombre}`, 55, pieY + 8, { align: "center" });
-
-            // Firma de OPESUR
-            doc.text("Firma y Sello de Recepción", 145, pieY + 4, { align: "center" });
-            doc.text("CIA. DE OPERACIONES MINERAS DEL SUR SAC", 145, pieY + 8, { align: "center" });
-            doc.setFont("helvetica", "bolditalic");
-            doc.text("OPESUR", 145, pieY + 12, { align: "center" });
-
-            // 8. PIE DE PÁGINA CORPORATIVO
-            obtenerBase64Imagen('pie.png', function (footerBase64) {
-                const pageHeight = doc.internal.pageSize.height;
-                
-                if (footerBase64) {
-                    doc.addImage(footerBase64, 'PNG', 0, pageHeight - 22, 210, 22);
-                } else {
-                    doc.setFillColor(30, 62, 60);
-                    doc.rect(0, pageHeight - 22, 210, 22, 'F');
-                    doc.setTextColor(226, 203, 161);
-                    doc.setFontSize(8.5);
-                    doc.setFont("helvetica", "bold");
-                    doc.text("Av. Circunvalación del Golf de Los Incas 134", 15, pageHeight - 14);
-                    doc.text("Torre 2, Piso 6,", 15, pageHeight - 10);
-                    doc.text("Santiago de Surco", 15, pageHeight - 6);
-                }
-
-                doc.save(`Acta_Recepcion_${datos.codigo_carga}.pdf`);
-            });
+            filasTabla.push([
+                index + 1,
+                `CARBON ACTIVADO ${lote.codigo_lote} – ${cantSacos}`,
+                `${pesoBruto.toFixed(2)}`
+            ]);
         });
+
+        while (filasTabla.length < 7) {
+            filasTabla.push(['', '', '']);
+        }
+
+        doc.autoTable({
+            startY: y,
+            head: [['Item', 'Descripción', 'Peso Kg']],
+            body: filasTabla,
+            theme: 'grid',
+            headStyles: { 
+                fillColor: [255, 255, 255], 
+                textColor: [0, 0, 0], 
+                fontStyle: 'bold', 
+                halign: 'center', 
+                lineWidth: 0.3, 
+                lineColor: [0, 0, 0] 
+            },
+            bodyStyles: { 
+                textColor: [0, 0, 0], 
+                lineWidth: 0.3, 
+                lineColor: [0, 0, 0] 
+            },
+            columnStyles: {
+                0: { cellWidth: 18, halign: 'center' },
+                1: { cellWidth: 110, halign: 'left' },
+                2: { cellWidth: 38, halign: 'right' }
+            },
+            margin: { left: 22, right: 22 }
+        });
+
+        // 6. TOTALIZADOR RECTANGULAR
+        let finalY = doc.lastAutoTable.finalY + 6;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.text("Total Kg.", 118, finalY);
+        doc.rect(136, finalY - 4, 34, 6);
+        doc.text(`${pesoTotal.toFixed(2)}`, 168, finalY, { align: "right" });
+
+        // 7. BLOQUE DE FIRMAS DINÁMICO
+        const pieY = finalY + 30;
+        
+        doc.setLineWidth(0.4);
+        doc.line(25, pieY, 85, pieY);   // Firma Proveedor
+        doc.line(115, pieY, 175, pieY); // Firma OPESUR
+
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "bold");
+        
+        // Nombre dinámico del Proveedor
+        doc.text("Firma y Sello de Recepción", 55, pieY + 4, { align: "center" });
+        doc.text(`${proveedorNombre}`, 55, pieY + 8, { align: "center" });
+
+        // Firma OPESUR
+        doc.text("Firma y Sello de Recepción", 145, pieY + 4, { align: "center" });
+        doc.text("CIA. DE OPERACIONES MINERAS DEL SUR SAC", 145, pieY + 8, { align: "center" });
+        doc.setFont("helvetica", "bolditalic");
+        doc.text("OPESUR", 145, pieY + 12, { align: "center" });
+
+        // 8. PIE DE PÁGINA
+        const pageHeight = doc.internal.pageSize.height;
+        if (footerBase64) {
+            doc.addImage(footerBase64, 'PNG', 0, pageHeight - 22, 210, 22);
+        } else {
+            doc.setFillColor(30, 62, 60);
+            doc.rect(0, pageHeight - 22, 210, 22, 'F');
+            doc.setTextColor(226, 203, 161);
+            doc.setFontSize(8.5);
+            doc.setFont("helvetica", "bold");
+            doc.text("Av. Circunvalación del Golf de Los Incas 134", 15, pageHeight - 14);
+            doc.text("Torre 2, Piso 6,", 15, pageHeight - 10);
+            doc.text("Santiago de Surco", 15, pageHeight - 6);
+        }
+
+        doc.save(`Acta_Recepcion_${datos.codigo_carga}.pdf`);
     }
 
     function generarGuiaPDF(datosEntrega) {
@@ -1110,7 +1111,7 @@
             if (r.success) {
                 alert('Carga guardada exitosamente.');
                 
-                generarActaRecepcionPDF({
+                await generarActaRecepcionPDF({
                     fecha: fecha_operacion ? new Date(fecha_operacion).toLocaleDateString('es-PE') : new Date().toLocaleDateString('es-PE'),
                     proveedor, ruc_proveedor, codigo_carga, numero_chaparra, guia_remision, guia_transportista, lotes
                 });
@@ -1203,8 +1204,8 @@
         });
     }
 
-    function reimprimirActa(carga) {
-        generarActaRecepcionPDF({
+    async function reimprimirActa(carga) {
+        await generarActaRecepcionPDF({
             fecha: new Date(carga.fecha).toLocaleDateString('es-PE'),
             proveedor: carga.proveedor,
             ruc_proveedor: carga.ruc_proveedor,
