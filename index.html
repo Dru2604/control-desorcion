@@ -574,48 +574,90 @@
         }
     }
 
-    // CONVERTIDOR ROBUSTO DE IMAGEN A BASE64 DESDE RUTA LOCAL O DOMINIO
-    function obtenerBase64Local(url) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.crossOrigin = 'Anonymous';
-            img.onload = function () {
-                const canvas = document.createElement('canvas');
-                canvas.width = this.width;
-                canvas.height = this.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(this, 0, 0);
-                resolve(canvas.toDataURL('image/jpeg', 0.95));
-            };
-            img.onerror = function () {
-                resolve(null);
-            };
-            img.src = url;
-        });
-    }
-
-    // GENERADOR DEL ACTA OFICIAL DE RECEPCIÓN DE MINERAL
-    async function generarActaRecepcionPDF(datos) {
+    // GENERADOR DEL ACTA OFICIAL DE RECEPCIÓN DE MINERAL (DIBUJO VECTORIAL EXACTO)
+    function generarActaRecepcionPDF(datos) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
-        // Intentar obtener el archivo de imagen 'encabezado.jpg'
-        const headerBase64 = await obtenerBase64Local('encabezado.jpg');
+        // 1. DIBUJO GEOMÉTRICO EXACTO DEL ENCABEZADO VECTORIAL
+        
+        // Polígono 1: Borde/Sombra Gris Claro
+        doc.setFillColor(210, 218, 215);
+        doc.path([
+            { op: 'm', c: [0, 0] },
+            { op: 'l', c: [72, 0] },
+            { op: 'l', c: [88, 22] },
+            { op: 'l', c: [72, 44] },
+            { op: 'l', c: [50, 44] },
+            { op: 'l', c: [41, 33] },
+            { op: 'l', c: [60, 33] },
+            { op: 'l', c: [70, 22] },
+            { op: 'l', c: [60, 10] },
+            { op: 'l', c: [0, 10] },
+            { op: 'h' }
+        ], 'F');
 
-        if (headerBase64) {
-            // Se dibuja el JPG exacto a 210mm x 45mm en la parte superior
-            doc.addImage(headerBase64, 'JPEG', 0, 0, 210, 45);
-        } else {
-            // Respaldo de contingencia
-            doc.setFillColor(27, 67, 65);
-            doc.rect(0, 0, 210, 45, 'F');
-            doc.setTextColor(226, 203, 161);
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(22);
-            doc.text("OPESUR", 22, 22);
-            doc.setFontSize(8);
-            doc.text("COMPAÑÍA DE OPERACIONES MINERAS DEL SUR SAC", 22, 29);
-        }
+        // Polígono 2: Bloque Dorado / Beige Central
+        doc.setFillColor(219, 203, 166);
+        doc.path([
+            { op: 'm', c: [0, 0] },
+            { op: 'l', c: [70, 0] },
+            { op: 'l', c: [85, 22] },
+            { op: 'l', c: [70, 33] },
+            { op: 'l', c: [55, 33] },
+            { op: 'l', c: [66, 22] },
+            { op: 'l', c: [56, 10] },
+            { op: 'l', c: [0, 10] },
+            { op: 'h' }
+        ], 'F');
+
+        // Polígono 3: Bloque Verde Petróleo Principal OPESUR
+        doc.setFillColor(34, 69, 67);
+        doc.path([
+            { op: 'm', c: [0, 0] },
+            { op: 'l', c: [54, 0] },
+            { op: 'l', c: [64, 22] },
+            { op: 'l', c: [47, 45] },
+            { op: 'l', c: [12, 45] },
+            { op: 'l', c: [0, 28] },
+            { op: 'h' }
+        ], 'F');
+
+        // Isotipo: Hexágonos concéntricos dorados
+        doc.setLineWidth(1.1);
+        doc.setDrawColor(219, 203, 166);
+        
+        // Hexágono Exterior
+        doc.path([
+            { op: 'm', c: [32, 6] },
+            { op: 'l', c: [39, 10] },
+            { op: 'l', c: [39, 18] },
+            { op: 'l', c: [32, 22] },
+            { op: 'l', c: [25, 18] },
+            { op: 'l', c: [25, 10] },
+            { op: 'h' }
+        ], 'D');
+
+        // Hexágono Interior
+        doc.path([
+            { op: 'm', c: [32, 9] },
+            { op: 'l', c: [36, 11.5] },
+            { op: 'l', c: [36, 16.5] },
+            { op: 'l', c: [32, 19] },
+            { op: 'l', c: [28, 16.5] },
+            { op: 'l', c: [28, 11.5] },
+            { op: 'h' }
+        ], 'D');
+
+        // Texto Institucional del Logo
+        doc.setTextColor(219, 203, 166);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("OPESUR", 32, 29, { align: "center" });
+
+        doc.setFontSize(5);
+        doc.text("COMPAÑÍA DE OPERACIONES", 32, 32.5, { align: "center" });
+        doc.text("MINERAS DEL SUR", 32, 35, { align: "center" });
 
         // 2. TÍTULO PRINCIPAL CENTRADO
         doc.setFont("helvetica", "bold");
@@ -705,7 +747,7 @@
         doc.rect(136, finalY - 4, 34, 6);
         doc.text(`${pesoTotal.toFixed(2)}`, 168, finalY, { align: "right" });
 
-        // 7. BLOQUE DE FIRMAS PARALELO
+        // 7. BLOQUE DE FIRMAS
         const pieY = finalY + 30;
         
         doc.setLineWidth(0.4);
@@ -715,11 +757,9 @@
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
         
-        // Firma Proveedor
         doc.text("Firma y Sello de Recepción", 55, pieY + 4, { align: "center" });
         doc.text(`${proveedorNombre}`, 55, pieY + 8, { align: "center" });
 
-        // Firma OPESUR
         doc.text("Firma y Sello de Recepción", 145, pieY + 4, { align: "center" });
         doc.text("CIA. DE OPERACIONES MINERAS DEL SUR SAC", 145, pieY + 8, { align: "center" });
         doc.setFont("helvetica", "bolditalic");
@@ -727,9 +767,9 @@
 
         // 8. PIE DE PÁGINA
         const pageHeight = doc.internal.pageSize.height;
-        doc.setFillColor(27, 67, 65);
+        doc.setFillColor(34, 69, 67);
         doc.rect(0, pageHeight - 22, 210, 22, 'F');
-        doc.setTextColor(226, 203, 161);
+        doc.setTextColor(219, 203, 166);
         doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
         doc.text("Av. Circunvalación del Golf de Los Incas 134", 15, pageHeight - 14);
@@ -1113,7 +1153,7 @@
             if (r.success) {
                 alert('Carga guardada exitosamente.');
                 
-                await generarActaRecepcionPDF({
+                generarActaRecepcionPDF({
                     fecha: fecha_operacion ? new Date(fecha_operacion).toLocaleDateString('es-PE') : new Date().toLocaleDateString('es-PE'),
                     proveedor, ruc_proveedor, codigo_carga, numero_chaparra, guia_remision, guia_transportista, lotes
                 });
@@ -1206,8 +1246,8 @@
         });
     }
 
-    async function reimprimirActa(carga) {
-        await generarActaRecepcionPDF({
+    function reimprimirActa(carga) {
+        generarActaRecepcionPDF({
             fecha: new Date(carga.fecha).toLocaleDateString('es-PE'),
             proveedor: carga.proveedor,
             ruc_proveedor: carga.ruc_proveedor,
