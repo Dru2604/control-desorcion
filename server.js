@@ -160,7 +160,45 @@ app.post('/api/declaraciones', async (req, res) => {
   }
 });
 
-// 5. CAMBIAR ESTADO DE CARGA
+// 5. CERTIFICADOS DE PROCEDENCIA DEL MINERAL (GUARDAR Y LISTAR)
+app.get('/api/certificados', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM certificados_procedencia ORDER BY created_at DESC');
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al consultar certificados.' });
+  }
+});
+
+app.post('/api/certificados', async (req, res) => {
+  const {
+    nombre_declarante, dni_declarante, ruc_declarante, domicilio_fiscal, condicion_minero,
+    nombre_concesion, codigo_concesion, distrito, provincia, departamento,
+    nombres_firmante, apellidos_firmante, dni_firmante, fecha_emision, usuario_registro
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO certificados_procedencia 
+        (nombre_declarante, dni_declarante, ruc_declarante, domicilio_fiscal, condicion_minero,
+         nombre_concesion, codigo_concesion, distrito, provincia, departamento,
+         nombres_firmante, apellidos_firmante, dni_firmante, fecha_emision, usuario_registro)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) RETURNING *`,
+      [
+        nombre_declarante, dni_declarante, ruc_declarante, domicilio_fiscal, condicion_minero,
+        nombre_concesion, codigo_concesion, distrito, provincia, departamento,
+        nombres_firmante, apellidos_firmante, dni_firmante, fecha_emision, usuario_registro
+      ]
+    );
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('Error al guardar Certificado:', err);
+    res.status(500).json({ success: false, error: 'Error al guardar el Certificado de Procedencia.' });
+  }
+});
+
+// 6. CAMBIAR ESTADO DE CARGA
 app.patch('/api/cargas/:id/estado', async (req, res) => {
   const { id } = req.params;
   const { estado, rol_usuario } = req.body;
@@ -175,7 +213,7 @@ app.patch('/api/cargas/:id/estado', async (req, res) => {
   }
 });
 
-// 6. VACIAR BASE DE DATOS
+// 7. VACIAR BASE DE DATOS
 app.delete('/api/cargas', async (req, res) => {
   const { rol_usuario } = req.body;
   if (rol_usuario !== 'ADMIN' && rol_usuario !== 'GERENCIA') {
@@ -189,6 +227,7 @@ app.delete('/api/cargas', async (req, res) => {
     await client.query('TRUNCATE TABLE lotes RESTART IDENTITY CASCADE');
     await client.query('TRUNCATE TABLE cargas RESTART IDENTITY CASCADE');
     await client.query('TRUNCATE TABLE declaraciones_juradas RESTART IDENTITY CASCADE');
+    await client.query('TRUNCATE TABLE certificados_procedencia RESTART IDENTITY CASCADE');
     await client.query('COMMIT');
 
     res.json({ success: true, message: 'Historial vaciado completamente.' });
@@ -200,7 +239,7 @@ app.delete('/api/cargas', async (req, res) => {
   }
 });
 
-// 7. REPORTES MENSUALES
+// 8. REPORTES MENSUALES
 app.get('/api/reportes/mensual', async (req, res) => {
   const rol = req.headers['x-rol-usuario'];
   if (rol !== 'ADMIN' && rol !== 'GERENCIA') return res.status(403).json({ success: false, error: 'Acceso denegado.' });
@@ -226,7 +265,7 @@ app.get('/api/reportes/mensual', async (req, res) => {
   }
 });
 
-// 8. CONSULTAR MOVIMIENTOS Y PENDIENTES
+// 9. CONSULTAR MOVIMIENTOS Y PENDIENTES
 app.get('/api/carbon-desorbido', async (req, res) => {
   try {
     const movimientosResult = await pool.query('SELECT * FROM inventario_carbon_desorbido ORDER BY fecha DESC');
@@ -242,7 +281,7 @@ app.get('/api/carbon-desorbido', async (req, res) => {
   }
 });
 
-// 9. REGISTRAR MOVIMIENTO DE CARBÓN DESORBIDO
+// 10. REGISTRAR MOVIMIENTO DE CARBÓN DESORBIDO
 app.post('/api/carbon-desorbido', async (req, res) => {
   const { tipo_movimiento, proveedor, codigo_lote, peso_seco_kg, observaciones, usuario_registro, lote_id } = req.body;
   const client = await pool.connect();
@@ -268,7 +307,7 @@ app.post('/api/carbon-desorbido', async (req, res) => {
   }
 });
 
-// 10. CONTROL MAESTRO GERENCIA
+// 11. CONTROL MAESTRO GERENCIA
 app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => {
   try {
     const paramsRes = await pool.query('SELECT * FROM parametros_gerencia ORDER BY id DESC LIMIT 1');
