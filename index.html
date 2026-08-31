@@ -8,6 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -156,19 +157,15 @@
         <div class="card">
             <h3>📦 Registrar Nueva Carga y Lotes</h3>
             <form id="formCarga" autocomplete="off">
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 15px;">
-                    <div class="campo">
-                        <label>Código de Operación:</label>
-                        <input type="text" id="codigo_carga" name="campo_codigo_operacion_no_auto" required autocomplete="off" placeholder="Ej: 2026-OPS-001">
-                    </div>
-                    <div class="campo">
-                        <label>Proveedor / Minero:</label>
-                        <input type="text" id="proveedor" name="campo_proveedor_no_auto" required autocomplete="off" placeholder="Ej: Minera El Sur">
-                    </div>
-                    <div class="campo">
-                        <label>Fecha de Operación (Opcional):</label>
-                        <input type="date" id="fecha_operacion">
-                    </div>
+                <!-- METADATOS COMPLETO DEL ACTA -->
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                    <div class="campo"><label>N° de Operación:</label><input type="text" id="codigo_carga" required autocomplete="off" placeholder="Ej: OPE-170326"></div>
+                    <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="proveedor" required autocomplete="off" placeholder="Ej: WILBER CCOTO"></div>
+                    <div class="campo"><label>RUC Proveedor:</label><input type="text" id="ruc_proveedor" autocomplete="off" placeholder="Ej: 10458796321"></div>
+                    <div class="campo"><label>N° de Chaparra:</label><input type="text" id="numero_chaparra" autocomplete="off" placeholder="Ej: CH-001"></div>
+                    <div class="campo"><label>Guía de Remisión (GR):</label><input type="text" id="guia_remision" autocomplete="off" placeholder="Ej: EG01-000123"></div>
+                    <div class="campo"><label>Guía Transportista (GT) (Opcional):</label><input type="text" id="guia_transportista" autocomplete="off" placeholder="Ej: V01-000456"></div>
+                    <div class="campo"><label>Fecha de Operación:</label><input type="date" id="fecha_operacion"></div>
                 </div>
 
                 <div id="contenedorLotes" style="background: #f7fafc; padding: 15px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #e2e8f0;">
@@ -178,8 +175,9 @@
                             <span style="font-size: 12px; font-weight: bold; color: #4a5568;">Lote #1</span>
                             <button type="button" class="btn-peligro" onclick="eliminarLote(this)" style="padding: 4px 8px; font-size: 11px;">🗑️ Eliminar Lote</button>
                         </div>
-                        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                            <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required autocomplete="off" placeholder="2026-OPS-LOTE-01"></div>
+                        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
+                            <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required autocomplete="off" placeholder="LOTE 1"></div>
+                            <div><label>N° Sacos:</label><input type="number" class="l-sacos" required autocomplete="off" placeholder="Ej: 12"></div>
                             <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" required autocomplete="off"></div>
                             <div><label>Tara (kg):</label><input type="number" step="0.01" class="l-tara" required autocomplete="off"></div>
                             <div><label>Humedad (%):</label><input type="number" step="0.01" class="l-humedad" required autocomplete="off"></div>
@@ -200,7 +198,7 @@
 
                 <button type="button" onclick="agregarCampoLote()" class="btn-secundario" style="margin-bottom: 15px;">+ Agregar Otro Lote</button>
                 <br>
-                <button type="submit" id="btnGuardar">Guardar Carga Completa</button>
+                <button type="submit" id="btnGuardar">Guardar Carga y Generar Acta</button>
             </form>
         </div>
     </div>
@@ -236,13 +234,12 @@
         </div>
     </div>
 
-    <!-- 4. CARBÓN DESORBIDO Y CONTROLES DE ENTREGA -->
+    <!-- 4. CARBÓN DESORBIDO Y MOVIMIENTOS -->
     <div id="secDesorcion" class="seccion-app">
         <div class="card">
             <h3>🔄 Gestión de Carbón Desorbido y Movimientos de Planta</h3>
             <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Módulo exclusivo para Administración y Gerencia.</p>
 
-            <!-- TARJETAS ACUMULADAS -->
             <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px;">
                 <div style="background: #2b6cb0; color: white; padding: 12px; border-radius: 8px; text-align: center;">
                     <span style="font-size: 10px; text-transform: uppercase;">🔥 Total a Desorción</span>
@@ -303,7 +300,6 @@
                 </div>
             </div>
 
-            <!-- MOTOR DE BÚSQUEDA Y CONTROL DE PENDIENTES POR PROVEEDOR -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; margin-bottom: 10px;">
                 <h4>📦 Lotes Procesados Pendientes de Devolución</h4>
                 <input type="text" id="srcPendienteProveedor" oninput="filtrarPendientes()" placeholder="🔍 Buscar por Proveedor..." style="width: 250px;" autocomplete="off">
@@ -322,7 +318,6 @@
                 <tbody></tbody>
             </table>
 
-            <!-- MOTOR DE BÚSQUEDA DE HISTORIAL POR FECHAS Y PROVEEDOR -->
             <h4 style="margin-top: 25px;">📋 Historial de Movimientos</h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; margin-bottom: 10px;">
                 <div><label style="font-size: 11px;">Buscar Proveedor:</label><input type="text" id="srcMovProveedor" oninput="filtrarMovimientos()" placeholder="Escribe un proveedor..." autocomplete="off"></div>
@@ -578,6 +573,96 @@
         } catch (err) {
             alert('Error de conexión al vaciar.');
         }
+    }
+
+    // GENERADOR DEL ACTA OFICIAL DE RECEPCIÓN DE MINERAL (PDF)
+    function generarActaRecepcionPDF(datos) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("ACTA DE RECEPCIÓN DE MINERAL", 105, 22, { align: "center" });
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8.5);
+        const textoMembrete = "Mediante el presente documento y de acuerdo con las condiciones comerciales establecidas, se da conformidad a la recepción de Mineral en Carbón Activado dentro de las instalaciones de la empresa CIA DE OPERACIONES MINERAS DEL SUR con RUC 20612160652, ubicado en Nro. SN. Sector Pampa Huanangurume - Chaparra - Caraveli - Arequipa.";
+        doc.text(doc.splitTextToSize(textoMembrete, 170), 20, 32);
+
+        doc.setFontSize(9.5);
+        let y = 52;
+        const fechaActual = datos.fecha || new Date().toLocaleDateString('es-PE');
+        const horaActual = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+
+        doc.setFont("helvetica", "bold"); doc.text(`Fecha`, 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${fechaActual}`, 56, y); y += 6;
+        doc.setFont("helvetica", "bold"); doc.text(`Hora`, 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${horaActual}`, 56, y); y += 6;
+        doc.setFont("helvetica", "bold"); doc.text(`PROVEEDOR`, 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.proveedor || '-'}`, 56, y); y += 6;
+        doc.setFont("helvetica", "bold"); doc.text(`RUC`, 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.ruc_proveedor || '-'}`, 56, y); y += 6;
+        doc.setFont("helvetica", "bold"); doc.text(`N° de Operación`, 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.codigo_carga}`, 56, y); y += 6;
+        doc.setFont("helvetica", "bold"); doc.text(`N° de Chaparra`, 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.numero_chaparra || '-'}`, 56, y); y += 6;
+        
+        doc.setFont("helvetica", "bold");
+        doc.text(`GUIA DE REMISION`, 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_remision || '-'}`, 56, y);
+        doc.setFont("helvetica", "bold"); doc.text(`GT:`, 110, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_transportista || '-'}`, 120, y); 
+        
+        y += 10;
+
+        const filasTabla = [];
+        let pesoTotal = 0;
+
+        datos.lotes.forEach((lote, index) => {
+            const pesoBruto = parseFloat(lote.peso_bruto || 0);
+            pesoTotal += pesoBruto;
+            const cantSacos = lote.cantidad_sacos ? `${lote.cantidad_sacos} SACOS` : 'NUMERO DE SACOS';
+            
+            filasTabla.push([
+                index + 1,
+                `CARBON ACTIVADO ${lote.codigo_lote} – ${cantSacos}`,
+                `${pesoBruto.toFixed(2)}`
+            ]);
+        });
+
+        while (filasTabla.length < 8) {
+            filasTabla.push(['', '', '']);
+        }
+
+        doc.autoTable({
+            startY: y,
+            head: [['Item', 'Descripción', 'Peso Kg']],
+            body: filasTabla,
+            theme: 'grid',
+            headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold', halign: 'center' },
+            columnStyles: {
+                0: { cellWidth: 20, halign: 'center' },
+                1: { cellWidth: 110, halign: 'left' },
+                2: { cellWidth: 40, halign: 'right' }
+            },
+            margin: { left: 20, right: 20 }
+        });
+
+        let finalY = doc.lastAutoTable.finalY + 8;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text("Total Kg.", 115, finalY);
+        doc.rect(135, finalY - 5, 35, 7);
+        doc.text(`${pesoTotal.toFixed(2)}`, 168, finalY, { align: "right" });
+
+        const pieY = finalY + 45;
+        doc.setLineWidth(0.5);
+        doc.line(25, pieY, 85, pieY);
+        doc.line(115, pieY, 175, pieY);
+
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "bold");
+        doc.text("Firma y Sello de Recepción", 55, pieY + 5, { align: "center" });
+        doc.text("PROVEEDOR", 55, pieY + 10, { align: "center" });
+
+        doc.text("Firma y Sello de Recepción", 145, pieY + 5, { align: "center" });
+        doc.text("CIA. DE OPERACIONES MINERAS DEL SUR SAC", 145, pieY + 10, { align: "center" });
+        doc.setFont("helvetica", "bolditalic");
+        doc.text("OPESUR", 145, pieY + 15, { align: "center" });
+
+        doc.save(`Acta_Recepcion_${datos.codigo_carga}.pdf`);
     }
 
     function generarGuiaPDF(datosEntrega) {
@@ -881,8 +966,9 @@
                 <span style="font-size: 12px; font-weight: bold; color: #4a5568;">Lote #${numLote}</span>
                 <button type="button" class="btn-peligro" onclick="eliminarLote(this)" style="padding: 4px 8px; font-size: 11px;">🗑️ Eliminar Lote</button>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
-                <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required autocomplete="off" placeholder="2026-OPS-LOTE-0${numLote}"></div>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
+                <div><label>Cod. Lote:</label><input type="text" class="l-codigo" required autocomplete="off" placeholder="LOTE ${numLote}"></div>
+                <div><label>N° Sacos:</label><input type="number" class="l-sacos" required autocomplete="off" placeholder="Ej: 10"></div>
                 <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" required autocomplete="off"></div>
                 <div><label>Tara (kg):</label><input type="number" step="0.01" class="l-tara" required autocomplete="off"></div>
                 <div><label>Humedad (%):</label><input type="number" step="0.01" class="l-humedad" required autocomplete="off"></div>
@@ -914,7 +1000,12 @@
 
         const codigo_carga = document.getElementById('codigo_carga').value;
         const proveedor = document.getElementById('proveedor').value;
+        const ruc_proveedor = document.getElementById('ruc_proveedor').value;
+        const numero_chaparra = document.getElementById('numero_chaparra').value;
+        const guia_remision = document.getElementById('guia_remision').value;
+        const guia_transportista = document.getElementById('guia_transportista').value;
         const fecha_operacion = document.getElementById('fecha_operacion').value;
+        
         const lotesElems = document.querySelectorAll('.lote-item');
         const lotes = [];
 
@@ -922,11 +1013,12 @@
             const inputsMuestras = el.querySelectorAll('.peso-muestra-val');
             if (inputsMuestras.length === 0) {
                 alert('Genera y llena los pesos de muestras para cada lote.');
-                btnGuardar.disabled = false; btnGuardar.innerText = 'Guardar Carga Completa';
+                btnGuardar.disabled = false; btnGuardar.innerText = 'Guardar Carga y Generar Acta';
                 return;
             }
             lotes.push({
                 codigo_lote: el.querySelector('.l-codigo').value,
+                cantidad_sacos: parseInt(el.querySelector('.l-sacos').value) || 0,
                 peso_bruto: parseFloat(el.querySelector('.l-bruto').value),
                 tara: parseFloat(el.querySelector('.l-tara').value),
                 porcentaje_humedad: parseFloat(el.querySelector('.l-humedad').value),
@@ -938,18 +1030,28 @@
             const res = await fetch(`${API_URL}/api/cargas`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ codigo_carga, proveedor, usuario_registro: usuarioSesion.usuario, fecha_operacion, lotes })
+                body: JSON.stringify({ 
+                    codigo_carga, proveedor, ruc_proveedor, numero_chaparra, guia_remision, guia_transportista, 
+                    usuario_registro: usuarioSesion.usuario, fecha_operacion, lotes 
+                })
             });
 
             const r = await res.json();
             if (r.success) {
                 alert('Carga guardada exitosamente.');
+                
+                // GENERAR ACTA EN PDF AUTOMÁTICAMENTE CON LOS DATOS DE LA CARGA
+                generarActaRecepcionPDF({
+                    fecha: fecha_operacion ? new Date(fecha_operacion).toLocaleDateString('es-PE') : new Date().toLocaleDateString('es-PE'),
+                    proveedor, ruc_proveedor, codigo_carga, numero_chaparra, guia_remision, guia_transportista, lotes
+                });
+
                 document.getElementById('formCarga').reset();
                 document.querySelectorAll('.contenedor-campos-muestras').forEach(c => c.innerHTML = '');
                 cargarCargas(); mostrarSeccion('secHistorial');
             } else alert(r.error || 'Error al guardar.');
         } catch (err) { alert('Error de conexión.'); } 
-        finally { btnGuardar.disabled = false; btnGuardar.innerText = 'Guardar Carga Completa'; }
+        finally { btnGuardar.disabled = false; btnGuardar.innerText = 'Guardar Carga y Generar Acta'; }
     });
 
     async function cargarCargas() {
@@ -977,6 +1079,7 @@
                 return `
                     <tr class="fila-lote-detalles">
                         <td><b>${l.codigo_lote}</b></td>
+                        <td><b>${l.cantidad_sacos || 0} sacos</b></td>
                         <td>${parseFloat(l.peso_bruto || 0).toFixed(2)} kg</td>
                         <td>${parseFloat(l.tara || 0).toFixed(2)} kg</td>
                         <td>${parseFloat(l.peso_muestras_total || 0).toFixed(3)} kg</td>
@@ -992,15 +1095,19 @@
                 `;
             }).join('');
 
+            const datosObj = JSON.stringify(c).replace(/"/g, '&quot;');
+
             contenedor.innerHTML += `
                 <div class="tabla-simplificada">
                     <div style="background: #edf2f7; padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #cbd5e0;">
                         <div>
-                            <b>Carga Master:</b> <span style="color: #2b6cb0;">${c.codigo_carga}</span> | 
+                            <b>Op:</b> <span style="color: #2b6cb0;">${c.codigo_carga}</span> | 
                             <b>Proveedor:</b> ${c.proveedor} | 
+                            <b>GR:</b> ${c.guia_remision || '-'} | 
                             <b>Fecha:</b> ${fecha}
                         </div>
-                        <div>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button onclick="reimprimirActa(${datosObj})" class="btn-secundario" style="padding: 4px 8px; font-size: 11px;">📄 Imprimir Acta</button>
                             <select ${!canEditar ? 'disabled' : ''} onchange="cambiarEstado(${c.id}, this.value)">
                                 <option value="Por Liquidar" ${c.estado === 'Por Liquidar' ? 'selected' : ''}>Por Liquidar</option>
                                 <option value="Liquidado" ${c.estado === 'Liquidado' ? 'selected' : ''}>Liquidado</option>
@@ -1011,6 +1118,7 @@
                         <thead>
                             <tr>
                                 <th>Cod. Lote</th>
+                                <th>Cantidad Sacos</th>
                                 <th>P. Bruto</th>
                                 <th>Tara</th>
                                 <th>Suma Muestras</th>
@@ -1023,6 +1131,19 @@
                     </table>
                 </div>
             `;
+        });
+    }
+
+    function reimprimirActa(carga) {
+        generarActaRecepcionPDF({
+            fecha: new Date(carga.fecha).toLocaleDateString('es-PE'),
+            proveedor: carga.proveedor,
+            ruc_proveedor: carga.ruc_proveedor,
+            codigo_carga: carga.codigo_carga,
+            numero_chaparra: carga.numero_chaparra,
+            guia_remision: carga.guia_remision,
+            guia_transportista: carga.guia_transportista,
+            lotes: carga.lotes
         });
     }
 
