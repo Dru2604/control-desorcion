@@ -592,61 +592,69 @@
         img.src = url;
     }
 
-    // GENERADOR DEL ACTA OFICIAL DE RECEPCIÓN DE MINERAL
+    // GENERADOR DEL ACTA OFICIAL DE RECEPCIÓN DE MINERAL IDÉNTICO A PLANTILLA
     function generarActaRecepcionPDF(datos) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
 
-        obtenerBase64Imagen('logo.jpeg', function (logoBase64) {
+        // 1. CARGAR IMAGEN DE CABECERA COMPLETA O DIBUJARLA
+        obtenerBase64Imagen('encabezado.png', function (headerBase64) {
             
-            // 1. MEMBRETE GEOMÉTRICO (Usando trazos compatibles nativos)
-            doc.setFillColor(202, 210, 211); // Gris
-            doc.rect(0, 0, 68, 44, 'F');
-            doc.triangle(68, 0, 80, 22, 68, 44, 'F');
+            if (headerBase64) {
+                doc.addImage(headerBase64, 'PNG', 0, 0, 210, 45);
+            } else {
+                // Fallback Trazados VectorialesOPUS
+                doc.setFillColor(202, 210, 211);
+                doc.rect(0, 0, 68, 44, 'F');
+                doc.triangle(68, 0, 80, 22, 68, 44, 'F');
 
-            doc.setFillColor(226, 203, 161); // Dorado
-            doc.rect(0, 0, 64, 44, 'F');
-            doc.triangle(64, 0, 76, 22, 64, 44, 'F');
+                doc.setFillColor(226, 203, 161);
+                doc.rect(0, 0, 64, 44, 'F');
+                doc.triangle(64, 0, 76, 22, 64, 44, 'F');
 
-            doc.setFillColor(30, 62, 60); // Verde OPESUR
-            doc.rect(0, 0, 48, 44, 'F');
-            doc.triangle(48, 0, 57, 22, 48, 44, 'F');
+                doc.setFillColor(30, 62, 60);
+                doc.rect(0, 0, 48, 44, 'F');
+                doc.triangle(48, 0, 57, 22, 48, 44, 'F');
 
-            if (logoBase64) {
-                doc.addImage(logoBase64, 'PNG', 4, 4, 38, 36);
+                obtenerBase64Imagen('logo.jpeg', function (logoB64) {
+                    if (logoB64) doc.addImage(logoB64, 'PNG', 4, 4, 38, 36);
+                });
             }
 
-            // 2. TÍTULO Y TEXTO LEGAL
+            // 2. TÍTULO PRINCIPAL (Centrado en Gris Oficial Word)
             doc.setFont("helvetica", "bold");
             doc.setFontSize(13);
-            doc.setTextColor(0, 0, 0);
-            doc.text("ACTA DE RECEPCIÓN DE MINERAL", 120, 24, { align: "center" });
+            doc.setTextColor(80, 80, 80);
+            doc.text("ACTA DE RECEPCIÓN DE MINERAL", 105, 58, { align: "center" });
 
+            // 3. TEXTO LEGAL
             doc.setFont("helvetica", "normal");
-            doc.setFontSize(8);
+            doc.setFontSize(8.5);
+            doc.setTextColor(0, 0, 0);
+            
             const textoMembrete = "Mediante el presente documento y de acuerdo con las condiciones comerciales establecidas, se da conformidad a la recepción de Mineral en Carbón Activado dentro de las instalaciones de la empresa CIA DE OPERACIONES MINERAS DEL SUR con RUC 20612160652, ubicado en Nro. SN. Sector Pampa Huanangurume - Chaparra - Caraveli - Arequipa.";
-            doc.text(doc.splitTextToSize(textoMembrete, 170), 20, 50);
+            doc.text(doc.splitTextToSize(textoMembrete, 168), 22, 68);
 
-            // 3. METADATOS DE LA CARGA
+            // 4. METADATOS DE LA CARGA
             doc.setFontSize(9);
-            let y = 68;
+            let y = 88;
             const fechaActual = datos.fecha || new Date().toLocaleDateString('es-PE');
             const horaActual = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
 
-            doc.setFont("helvetica", "bold"); doc.text("Fecha", 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${fechaActual}`, 55, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("Hora", 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${horaActual}`, 55, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("PROVEEDOR", 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.proveedor || '-'}`, 55, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("RUC", 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.ruc_proveedor || '-'}`, 55, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("N° de Operación", 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.codigo_carga}`, 55, y); y += 5.5;
-            doc.setFont("helvetica", "bold"); doc.text("N° de Chaparra", 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.numero_chaparra || '-'}`, 55, y); y += 5.5;
+            doc.setFont("helvetica", "bold"); doc.text("Fecha", 22, y); doc.text(":", 54, y); doc.setFont("helvetica", "normal"); doc.text(`${fechaActual}`, 58, y); y += 5.5;
+            doc.setFont("helvetica", "bold"); doc.text("Hora", 22, y); doc.text(":", 54, y); doc.setFont("helvetica", "normal"); doc.text(`${horaActual}`, 58, y); y += 5.5;
+            doc.setFont("helvetica", "bold"); doc.text("PROVEEDOR", 22, y); doc.text(":", 54, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.proveedor || '-'}`, 58, y); y += 5.5;
+            doc.setFont("helvetica", "bold"); doc.text("RUC", 22, y); doc.text(":", 54, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.ruc_proveedor || '-'}`, 58, y); y += 5.5;
+            doc.setFont("helvetica", "bold"); doc.text("N° de Operación", 22, y); doc.text(":", 54, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.codigo_carga}`, 58, y); y += 5.5;
+            doc.setFont("helvetica", "bold"); doc.text("N° de Chaparra", 22, y); doc.text(":", 54, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.numero_chaparra || '-'}`, 58, y); y += 5.5;
             
             doc.setFont("helvetica", "bold");
-            doc.text("GUIA DE REMISION", 20, y); doc.text(":", 52, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_remision || '-'}`, 55, y);
-            doc.setFont("helvetica", "bold"); doc.text("GT:", 110, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_transportista || '-'}`, 118, y); 
+            doc.text("GUIA DE REMISION", 22, y); doc.text(":", 54, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_remision || '-'}`, 58, y);
+            doc.setFont("helvetica", "bold"); doc.text("GT:", 112, y); doc.setFont("helvetica", "normal"); doc.text(`${datos.guia_transportista || '-'}`, 120, y); 
             
             y += 8;
 
-            // 4. TABLA DE DETALLE DE LOTES
+            // 5. TABLA DE DETALLE DE LOTES
             const filasTabla = [];
             let pesoTotal = 0;
 
@@ -675,21 +683,21 @@
                 bodyStyles: { textColor: [0, 0, 0], lineWidth: 0.3, lineColor: [0, 0, 0] },
                 columnStyles: {
                     0: { cellWidth: 18, halign: 'center' },
-                    1: { cellWidth: 112, halign: 'left' },
-                    2: { cellWidth: 40, halign: 'right' }
+                    1: { cellWidth: 110, halign: 'left' },
+                    2: { cellWidth: 38, halign: 'right' }
                 },
-                margin: { left: 20, right: 20 }
+                margin: { left: 22, right: 22 }
             });
 
-            // 5. TOTALIZADOR Y FIRMAS
+            // 6. TOTALIZADOR Y FIRMAS
             let finalY = doc.lastAutoTable.finalY + 6;
             doc.setFont("helvetica", "bold");
             doc.setFontSize(10);
             doc.text("Total Kg.", 118, finalY);
-            doc.rect(136, finalY - 4, 36, 6);
-            doc.text(`${pesoTotal.toFixed(2)}`, 170, finalY, { align: "right" });
+            doc.rect(136, finalY - 4, 34, 6);
+            doc.text(`${pesoTotal.toFixed(2)}`, 168, finalY, { align: "right" });
 
-            const pieY = finalY + 32;
+            const pieY = finalY + 30;
             doc.setLineWidth(0.4);
             doc.line(25, pieY, 85, pieY);
             doc.line(115, pieY, 175, pieY);
@@ -704,19 +712,25 @@
             doc.setFont("helvetica", "bolditalic");
             doc.text("OPESUR", 145, pieY + 12, { align: "center" });
 
-            // 6. PIE DE PÁGINA CORPORATIVO OPESUR
-            const pageHeight = doc.internal.pageSize.height;
-            doc.setFillColor(30, 62, 60); // Verde OPESUR (#1E3E3C)
-            doc.rect(0, pageHeight - 22, 210, 22, 'F');
+            // 7. PIE DE PÁGINA CORPORATIVO (Franja Verde con Dirección en Beige)
+            obtenerBase64Imagen('pie.png', function (footerBase64) {
+                const pageHeight = doc.internal.pageSize.height;
+                
+                if (footerBase64) {
+                    doc.addImage(footerBase64, 'PNG', 0, pageHeight - 22, 210, 22);
+                } else {
+                    doc.setFillColor(30, 62, 60);
+                    doc.rect(0, pageHeight - 22, 210, 22, 'F');
+                    doc.setTextColor(226, 203, 161);
+                    doc.setFontSize(8.5);
+                    doc.setFont("helvetica", "bold");
+                    doc.text("Av. Circunvalación del Golf de Los Incas 134", 15, pageHeight - 14);
+                    doc.text("Torre 2, Piso 6,", 15, pageHeight - 10);
+                    doc.text("Santiago de Surco", 15, pageHeight - 6);
+                }
 
-            doc.setTextColor(226, 203, 161); // Dorado (#E2CBA1)
-            doc.setFontSize(8.5);
-            doc.setFont("helvetica", "bold");
-            doc.text("Av. Circunvalación del Golf de Los Incas 134", 15, pageHeight - 14);
-            doc.text("Torre 2, Piso 6,", 15, pageHeight - 10);
-            doc.text("Santiago de Surco", 15, pageHeight - 6);
-
-            doc.save(`Acta_Recepcion_${datos.codigo_carga}.pdf`);
+                doc.save(`Acta_Recepcion_${datos.codigo_carga}.pdf`);
+            });
         });
     }
 
