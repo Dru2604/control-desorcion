@@ -237,8 +237,8 @@
     <!-- 3. DECLARACIÓN JURADA DEL TRANSPORTISTA -->
     <div id="secDeclaracion" class="seccion-app">
         <div class="card">
-            <h3>📜 Generar Declaración Jurada del Transportista</h3>
-            <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Ingresa los datos solicitados para generar el documento en formato PDF.</p>
+            <h3>📜 Generar y Registrar Declaración Jurada del Transportista</h3>
+            <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Ingresa los datos para guardar la declaración en la base de datos y generar el PDF oficial.</p>
 
             <form id="formDeclaracionJurada" autocomplete="off">
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
@@ -317,9 +317,29 @@
 
                 <div style="margin-top: 20px; text-align: right;">
                     <button type="button" onclick="copiarNombreConductorAFirma()" class="btn-secundario" style="margin-right: 10px;">Usar Nombre de Conductor en Firma</button>
-                    <button type="submit" class="btn-exito">📄 Generar y Descargar DJ (PDF)</button>
+                    <button type="submit" class="btn-exito" id="btnGuardarDj">💾 Guardar y Descargar DJ (PDF)</button>
                 </div>
             </form>
+
+            <h4 style="margin-top: 30px;">📋 Historial de Declaraciones Juradas Registradas</h4>
+            <div style="margin-top: 10px; margin-bottom: 10px;">
+                <input type="text" id="srcDjTexto" oninput="filtrarDeclaraciones()" placeholder="🔍 Buscar por Conductor, Placa, Guía o Proveedor..." style="width: 100%; padding: 8px;" autocomplete="off">
+            </div>
+
+            <table id="tablaDeclaracionesHistorial">
+                <thead>
+                    <tr>
+                        <th>Fecha Reg.</th>
+                        <th>Conductor</th>
+                        <th>Placa</th>
+                        <th>Guía Remisión</th>
+                        <th>Proveedor Emisor</th>
+                        <th>Firma</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
 
@@ -555,6 +575,7 @@
     let cargasGlobales = [];
     let pendientesGlobales = [];
     let movimientosGlobales = [];
+    let declaracionesGlobales = [];
     let chartKgInstance = null;
     let chartValorInstance = null;
 
@@ -608,6 +629,7 @@
         }
 
         cargarCargas();
+        cargarDeclaraciones();
     }
 
     function cerrarSesion() {
@@ -624,12 +646,13 @@
         if (id === 'secReportes') cargarReporteMensual();
         if (id === 'secDesorcion') cargarCarbonDesorbido();
         if (id === 'secGerencia') cargarControlMaestroGerencia();
+        if (id === 'secDeclaracion') cargarDeclaraciones();
 
         if (btn) btn.classList.add('active');
     }
 
     async function borrarHistorial() {
-        if (!confirm('⚠️ ¿Estás seguro de que deseas vaciar TODO el historial de cargas, lotes y movimientos?\nSe reiniciará la base de datos para pruebas.')) {
+        if (!confirm('⚠️ ¿Estás seguro de que deseas vaciar TODO el historial de cargas, lotes, declaraciones y movimientos?\nSe reiniciará la base de datos.')) {
             return;
         }
 
@@ -645,6 +668,7 @@
                 alert('Historial vaciado completamente.');
                 cargarCargas();
                 cargarCarbonDesorbido();
+                cargarDeclaraciones();
             } else {
                 alert(r.error || 'Error al vaciar el historial.');
             }
@@ -852,25 +876,22 @@
     function formatearFechaEspanol(fechaStr) {
         if (!fechaStr) return '';
         const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        const partes = fechaStr.split('-');
+        const partes = fechaStr.split('T')[0].split('-');
         if (partes.length === 3) return `${parseInt(partes[2])} de ${meses[parseInt(partes[1]) - 1]} del ${partes[0]}`;
         return fechaStr;
     }
 
     function formatearFechaCorta(fechaStr) {
         if (!fechaStr) return '';
-        const partes = fechaStr.split('-');
+        const partes = fechaStr.split('T')[0].split('-');
         if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
         return fechaStr;
     }
 
-    document.getElementById('formDeclaracionJurada').addEventListener('submit', async function(e) {
-        e.preventDefault();
-
+    async function generarPdfDeclaracion(datos) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
-        // 1. CARGAR ENCABEZADO PROPORCIONAL
         const imgObj = await cargarImagenProporcional('./encabezado.png');
         let altoHeader = 36.6; 
 
@@ -886,28 +907,26 @@
             doc.text("No se encontró el archivo encabezado.png", 105, 18, { align: "center" });
         }
 
-        // Recuperar valores del formulario
-        const nombreConductor = document.getElementById('djNombreConductor').value.toUpperCase();
-        const dniConductor = document.getElementById('djDniConductor').value;
-        const licenciaConductor = document.getElementById('djLicenciaConductor').value;
-        const calidadEmpresa = document.getElementById('djCalidadEmpresa').value;
-        const rucEmpresa = document.getElementById('djRucEmpresa').value;
-        const proveedorEmisor = document.getElementById('djProveedorEmisor').value.toUpperCase();
+        const nombreConductor = datos.nombre_conductor.toUpperCase();
+        const dniConductor = datos.dni_conductor;
+        const licenciaConductor = datos.licencia_conductor;
+        const calidadEmpresa = datos.calidad_empresa;
+        const rucEmpresa = datos.ruc_empresa;
+        const proveedorEmisor = datos.proveedor_emisor.toUpperCase();
         
-        const fechaTraslado = formatearFechaCorta(document.getElementById('djFechaTraslado').value);
-        const guiaRemision = document.getElementById('djGuiaRemision').value;
-        const rutaUsada = document.getElementById('djRutaUsada').value.toUpperCase();
+        const fechaTraslado = formatearFechaCorta(datos.fecha_traslado);
+        const guiaRemision = datos.guia_remision;
+        const rutaUsada = datos.ruta_usada.toUpperCase();
         
-        const puntoPartida = document.getElementById('djPuntoPartida').value.toUpperCase();
-        const puntoLlegada = document.getElementById('djPuntoLlegada').value;
+        const puntoPartida = datos.punto_partida.toUpperCase();
+        const puntoLlegada = datos.punto_llegada;
         
-        const placaVehiculo = document.getElementById('djPlacaVehiculo').value.toUpperCase();
-        const propietarioVehiculo = document.getElementById('djPropietarioVehiculo').value.toUpperCase();
+        const placaVehiculo = datos.placa_vehiculo.toUpperCase();
+        const propietarioVehiculo = datos.propietario_vehiculo.toUpperCase();
         
-        const fechaDocumentoTexto = formatearFechaEspanol(document.getElementById('djFechaDocumento').value);
-        const nombreFirma = document.getElementById('djNombreFirma').value;
+        const fechaDocumentoTexto = formatearFechaEspanol(datos.fecha_documento);
+        const nombreFirma = datos.nombre_firma;
 
-        // 2. TÍTULO PRINCIPAL
         let posY = altoHeader + 12;
 
         doc.setFont("helvetica", "bold");
@@ -915,7 +934,6 @@
         doc.setTextColor(0, 0, 0);
         doc.text("DECLARACIÓN JURADA DEL TRANSPORTISTA", 105, posY, { align: "center" });
 
-        // 3. ENCABEZADO Y CONTENIDO
         posY += 12;
         doc.setFontSize(9.5);
         
@@ -927,7 +945,6 @@
         posY += (lineasEncabezado.length * 4.8) + 5;
         const anchoMax = 165;
 
-        // 4. NUMERALES
         let txt1 = `1. Que efectué el traslado de carbón activado con contenido mineral en la fecha ${fechaTraslado}.`;
         let lineas1 = doc.splitTextToSize(txt1, anchoMax);
         doc.text(lineas1, 22, posY);
@@ -963,7 +980,6 @@
         doc.text(lineas6, 22, posY);
         posY += (lineas6.length * 4.8) + 6;
 
-        // 5. PARRAFO DE RESPONSABILIDAD
         let txtResp = `Declaro bajo juramento que la información consignada es veraz y que asumo plena responsabilidad administrativa, civil y/o penal en caso de falsedad o inexactitud de los datos proporcionados.`;
         let lineasResp = doc.splitTextToSize(txtResp, anchoMax);
         doc.text(lineasResp, 22, posY);
@@ -971,7 +987,6 @@
 
         doc.text(`En Chaparra, ${fechaDocumentoTexto}`, 22, posY);
 
-        // 6. FIRMA
         posY += 24;
         doc.setLineWidth(0.4);
         doc.line(70, posY, 140, posY);
@@ -981,7 +996,6 @@
         doc.setFontSize(9);
         doc.text(nombreFirma, 105, posY, { align: "center" });
 
-        // 7. PIE DE PÁGINA INSTITUCIONAL
         const pageHeight = doc.internal.pageSize.height;
         doc.setFillColor(34, 69, 67);
         doc.rect(0, pageHeight - 22, 210, 22, 'F');
@@ -992,7 +1006,109 @@
         doc.text("Torre 2, Piso 6, Santiago de Surco", 15, pageHeight - 8);
 
         doc.save(`DJ_Transportista_${placaVehiculo}.pdf`);
+    }
+
+    document.getElementById('formDeclaracionJurada').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const btnGuardar = document.getElementById('btnGuardarDj');
+        if (btnGuardar.disabled) return;
+
+        btnGuardar.disabled = true;
+        btnGuardar.innerText = 'Guardando...';
+
+        const payload = {
+            nombre_conductor: document.getElementById('djNombreConductor').value,
+            dni_conductor: document.getElementById('djDniConductor').value,
+            licencia_conductor: document.getElementById('djLicenciaConductor').value,
+            calidad_empresa: document.getElementById('djCalidadEmpresa').value,
+            ruc_empresa: document.getElementById('djRucEmpresa').value,
+            proveedor_emisor: document.getElementById('djProveedorEmisor').value,
+            fecha_traslado: document.getElementById('djFechaTraslado').value,
+            guia_remision: document.getElementById('djGuiaRemision').value,
+            ruta_usada: document.getElementById('djRutaUsada').value,
+            punto_partida: document.getElementById('djPuntoPartida').value,
+            punto_llegada: document.getElementById('djPuntoLlegada').value,
+            placa_vehiculo: document.getElementById('djPlacaVehiculo').value,
+            propietario_vehiculo: document.getElementById('djPropietarioVehiculo').value,
+            fecha_documento: document.getElementById('djFechaDocumento').value,
+            nombre_firma: document.getElementById('djNombreFirma').value,
+            usuario_registro: usuarioSesion ? usuarioSesion.usuario : 'Sistema'
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/api/declaraciones`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const r = await res.json();
+            if (r.success) {
+                alert('Declaración Jurada guardada en la base de datos.');
+                await generarPdfDeclaracion(payload);
+                document.getElementById('formDeclaracionJurada').reset();
+                cargarDeclaraciones();
+            } else {
+                alert(r.error || 'Error al guardar la declaración.');
+            }
+        } catch (err) {
+            alert('Error de conexión con el servidor.');
+        } finally {
+            btnGuardar.disabled = false;
+            btnGuardar.innerText = '💾 Guardar y Descargar DJ (PDF)';
+        }
     });
+
+    async function cargarDeclaraciones() {
+        try {
+            const res = await fetch(`${API_URL}/api/declaraciones`);
+            const r = await res.json();
+            if (r.success) {
+                declaracionesGlobales = r.data;
+                renderTablaDeclaraciones(declaracionesGlobales);
+            }
+        } catch (err) {
+            console.error('Error al cargar historial DJ:', err);
+        }
+    }
+
+    function renderTablaDeclaraciones(lista) {
+        const tbody = document.querySelector('#tablaDeclaracionesHistorial tbody');
+        tbody.innerHTML = '';
+
+        lista.forEach(dj => {
+            const fechaReg = new Date(dj.created_at).toLocaleString();
+            const djObj = JSON.stringify(dj).replace(/"/g, '&quot;');
+
+            tbody.innerHTML += `
+                <tr>
+                    <td>${fechaReg}</td>
+                    <td><b>${dj.nombre_conductor}</b><br><small style="color:#718096;">DNI: ${dj.dni_conductor}</small></td>
+                    <td><span class="badge" style="background:#e2e8f0; color:#2d3748;">${dj.placa_vehiculo}</span></td>
+                    <td>${dj.guia_remision}</td>
+                    <td>${dj.proveedor_emisor}</td>
+                    <td>${dj.nombre_firma}</td>
+                    <td><button onclick="reimprimirDj(${djObj})" class="btn-secundario" style="padding: 4px 8px; font-size: 11px;">📄 Reimprimir PDF</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function filtrarDeclaraciones() {
+        const txt = document.getElementById('srcDjTexto').value.toLowerCase();
+        const filtrados = declaracionesGlobales.filter(dj => 
+            dj.nombre_conductor.toLowerCase().includes(txt) ||
+            dj.placa_vehiculo.toLowerCase().includes(txt) ||
+            dj.guia_remision.toLowerCase().includes(txt) ||
+            dj.proveedor_emisor.toLowerCase().includes(txt)
+        );
+        renderTablaDeclaraciones(filtrados);
+    }
+
+    async function reimprimirDj(djData) {
+        await generarPdfDeclaracion(djData);
+    }
 
     function abrirModalDevolucion(id, proveedor, lote, pesoBruto) {
         const pBruto = parseFloat(pesoBruto || 0);
