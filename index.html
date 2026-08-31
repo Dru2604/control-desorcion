@@ -839,7 +839,7 @@
         doc.save(`Guia_Devolucion_${datosEntrega.codigo_lote}.pdf`);
     }
 
-    // LÓGICA DECLARACIÓN JURADA DEL TRANSPORTISTA
+    // LÓGICA DECLARACIÓN JURADA DEL TRANSPORTISTA CON ENCABEZADO Y PIE INSTITUCIONAL
     function copiarNombreConductorAFirma() {
         const nombre = document.getElementById('djNombreConductor').value;
         if (nombre) {
@@ -853,9 +853,7 @@
         if (!fechaStr) return '';
         const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
         const partes = fechaStr.split('-');
-        if (partes.length === 3) {
-            return `${parseInt(partes[2])} de ${meses[parseInt(partes[1]) - 1]} del ${partes[0]}`;
-        }
+        if (partes.length === 3) return `${parseInt(partes[2])} de ${meses[parseInt(partes[1]) - 1]} del ${partes[0]}`;
         return fechaStr;
     }
 
@@ -866,12 +864,29 @@
         return fechaStr;
     }
 
-    document.getElementById('formDeclaracionJurada').addEventListener('submit', function(e) {
+    document.getElementById('formDeclaracionJurada').addEventListener('submit', async function(e) {
         e.preventDefault();
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
+        // 1. CARGAR ENCABEZADO PROPORCIONAL
+        const imgObj = await cargarImagenProporcional('./encabezado.png');
+        let altoHeader = 36.6; 
+
+        if (imgObj) {
+            altoHeader = imgObj.alto;
+            doc.addImage(imgObj.base64, 'PNG', 0, 0, imgObj.ancho, imgObj.alto);
+        } else {
+            doc.setFillColor(255, 255, 255);
+            doc.rect(0, 0, 210, altoHeader, 'F');
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.setTextColor(180, 0, 0);
+            doc.text("No se encontró el archivo encabezado.png", 105, 18, { align: "center" });
+        }
+
+        // Recuperar valores del formulario
         const nombreConductor = document.getElementById('djNombreConductor').value.toUpperCase();
         const dniConductor = document.getElementById('djDniConductor').value;
         const licenciaConductor = document.getElementById('djLicenciaConductor').value;
@@ -892,70 +907,89 @@
         const fechaDocumentoTexto = formatearFechaEspanol(document.getElementById('djFechaDocumento').value);
         const nombreFirma = document.getElementById('djNombreFirma').value;
 
-        let posY = 25;
+        // 2. TÍTULO PRINCIPAL
+        let posY = altoHeader + 12;
 
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(13);
+        doc.setFontSize(12.5);
+        doc.setTextColor(0, 0, 0);
         doc.text("DECLARACIÓN JURADA DEL TRANSPORTISTA", 105, posY, { align: "center" });
 
-        posY += 15;
-        doc.setFontSize(10);
+        // 3. ENCABEZADO Y CONTENIDO
+        posY += 12;
+        doc.setFontSize(9.5);
         
         const encabezado = `Yo, ${nombreConductor} ,identificado con DNI N° ${dniConductor} y licencia de conducir:${licenciaConductor}, en mi calidad de ${calidadEmpresa} de la empresa , identificada con RUC N°${rucEmpresa}declaro bajo juramento lo siguiente:`;
         const lineasEncabezado = doc.splitTextToSize(encabezado, 165);
         doc.setFont("helvetica", "normal");
         doc.text(lineasEncabezado, 22, posY);
 
-        posY += (lineasEncabezado.length * 5) + 6;
+        posY += (lineasEncabezado.length * 4.8) + 5;
         const anchoMax = 165;
 
+        // 4. NUMERALES
         let txt1 = `1. Que efectué el traslado de carbón activado con contenido mineral en la fecha ${fechaTraslado}.`;
-        doc.text(doc.splitTextToSize(txt1, anchoMax), 22, posY);
-        posY += 10;
+        let lineas1 = doc.splitTextToSize(txt1, anchoMax);
+        doc.text(lineas1, 22, posY);
+        posY += (lineas1.length * 4.8) + 4;
 
         let txt2_partida = `2. Que el punto de partida del traslado fue ${puntoPartida}`;
         let lineas2_1 = doc.splitTextToSize(txt2_partida, anchoMax);
         doc.text(lineas2_1, 22, posY);
-        posY += (lineas2_1.length * 5) + 3;
+        posY += (lineas2_1.length * 4.8) + 2;
 
         let txt2_llegada = `y el punto de llegada fue ${puntoLlegada}.`;
         let lineas2_2 = doc.splitTextToSize(txt2_llegada, anchoMax);
         doc.text(lineas2_2, 22, posY);
-        posY += (lineas2_2.length * 5) + 5;
+        posY += (lineas2_2.length * 4.8) + 4;
 
         let txt3 = `3. Que la ruta utilizada para el traslado fue ${rutaUsada}.`;
-        doc.text(doc.splitTextToSize(txt3, anchoMax), 22, posY);
-        posY += 10;
+        let lineas3 = doc.splitTextToSize(txt3, anchoMax);
+        doc.text(lineas3, 22, posY);
+        posY += (lineas3.length * 4.8) + 4;
 
         let txt4 = `4. Que el vehículo utilizado cuenta con la placa N° ${placaVehiculo} , propiedad de ${propietarioVehiculo}.`;
         let lineas4 = doc.splitTextToSize(txt4, anchoMax);
         doc.text(lineas4, 22, posY);
-        posY += (lineas4.length * 5) + 5;
+        posY += (lineas4.length * 4.8) + 4;
 
         let txt5 = `5. Que el traslado se realizó conforme a la Guía de Remisión N° ${guiaRemision},emitida por ${proveedorEmisor} , la cual se encuentra debidamente vinculada a esta operación.`;
         let lineas5 = doc.splitTextToSize(txt5, anchoMax);
         doc.text(lineas5, 22, posY);
-        posY += (lineas5.length * 5) + 5;
+        posY += (lineas5.length * 4.8) + 4;
 
         let txt6 = `6. Que durante todo el trayecto el vehículo mantuvo las condiciones adecuadas de seguridad y cumplimiento normativo de transporte de carga minera.`;
         let lineas6 = doc.splitTextToSize(txt6, anchoMax);
         doc.text(lineas6, 22, posY);
-        posY += (lineas6.length * 5) + 8;
+        posY += (lineas6.length * 4.8) + 6;
 
+        // 5. PARRAFO DE RESPONSABILIDAD
         let txtResp = `Declaro bajo juramento que la información consignada es veraz y que asumo plena responsabilidad administrativa, civil y/o penal en caso de falsedad o inexactitud de los datos proporcionados.`;
         let lineasResp = doc.splitTextToSize(txtResp, anchoMax);
         doc.text(lineasResp, 22, posY);
-        posY += (lineasResp.length * 5) + 12;
+        posY += (lineasResp.length * 4.8) + 8;
 
         doc.text(`En Chaparra, ${fechaDocumentoTexto}`, 22, posY);
 
-        posY += 30;
-        doc.setLineWidth(0.5);
+        // 6. FIRMA
+        posY += 24;
+        doc.setLineWidth(0.4);
         doc.line(70, posY, 140, posY);
 
-        posY += 6;
+        posY += 5;
         doc.setFont("helvetica", "bold");
+        doc.setFontSize(9);
         doc.text(nombreFirma, 105, posY, { align: "center" });
+
+        // 7. PIE DE PÁGINA INSTITUCIONAL
+        const pageHeight = doc.internal.pageSize.height;
+        doc.setFillColor(34, 69, 67);
+        doc.rect(0, pageHeight - 22, 210, 22, 'F');
+        doc.setTextColor(219, 203, 166);
+        doc.setFontSize(8.5);
+        doc.setFont("helvetica", "bold");
+        doc.text("Av. Circunvalación del Golf de Los Incas 134", 15, pageHeight - 14);
+        doc.text("Torre 2, Piso 6, Santiago de Surco", 15, pageHeight - 8);
 
         doc.save(`DJ_Transportista_${placaVehiculo}.pdf`);
     });
