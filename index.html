@@ -579,43 +579,33 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
-        // 1. DIBUJAR MEMBRETE DE OPESUR MEDIANTE GEOMETRÍA VECTORIAL NATIVA
-        // Polígono principal de color verde petróleo oscuro
-        doc.setFillColor(27, 67, 65);
-        doc.triangle(0, 0, 95, 0, 70, 45, 'F');
-        doc.triangle(0, 0, 70, 45, 0, 45, 'F');
+        // 1. ENCABEZADO VECTORIAL 100% COMPATIBLE CON JSPDF
+        doc.setFillColor(27, 67, 65); // Verde OPESUR
+        doc.rect(0, 0, 210, 45, 'F');
 
-        // Polígono secundario color beige/dorado
-        doc.setFillColor(226, 203, 161);
-        doc.triangle(96, 0, 130, 0, 105, 25, 'F');
-        doc.triangle(96, 0, 105, 25, 71, 25, 'F');
+        doc.setFillColor(226, 203, 161); // Dorado / Beige
+        doc.rect(140, 0, 70, 45, 'F');
 
-        // Polígono de acento color gris claro
-        doc.setFillColor(210, 215, 215);
-        doc.triangle(131, 0, 142, 0, 131, 15, 'F');
-        doc.triangle(106, 26, 131, 15, 117, 35, 'F');
-
-        // Isotipo: Hexágonos concéntricos dorados
-        doc.setLineWidth(1.2);
-        doc.setDrawColor(226, 203, 161);
-        doc.polygon([40, 7, 48, 12, 48, 20, 40, 25, 32, 20, 32, 12], 'D');
-        doc.polygon([40, 10, 45, 13, 45, 19, 40, 22, 35, 19, 35, 13], 'D');
-
-        // Texto institucional OPESUR
+        // Texto del Logo OPESUR
         doc.setTextColor(226, 203, 161);
         doc.setFont("helvetica", "bold");
-        doc.setFontSize(16);
-        doc.text("OPESUR", 40, 32, { align: "center" });
+        doc.setFontSize(22);
+        doc.text("OPESUR", 22, 22);
 
-        doc.setFontSize(5.5);
-        doc.text("COMPAÑÍA DE OPERACIONES", 40, 35.5, { align: "center" });
-        doc.text("MINERAS DEL SUR", 40, 38, { align: "center" });
+        doc.setFontSize(8);
+        doc.text("COMPAÑÍA DE OPERACIONES MINERAS DEL SUR SAC", 22, 29);
+
+        // Texto lateral sobre fondo dorado
+        doc.setTextColor(27, 67, 65);
+        doc.setFontSize(10);
+        doc.text("PLANTA DE ACOPIO", 175, 20, { align: "center" });
+        doc.text("Y DESORCIÓN", 175, 26, { align: "center" });
 
         // 2. TÍTULO PRINCIPAL CENTRADO
         doc.setFont("helvetica", "bold");
         doc.setFontSize(13.5);
         doc.setTextColor(80, 80, 80);
-        doc.text("ACTA DE RECEPCIÓN DE MINERAL", 105, 56, { align: "center" });
+        doc.text("ACTA DE RECEPCIÓN DE MINERAL", 105, 58, { align: "center" });
 
         // 3. TEXTO LEGAL Y CONDICIONES
         doc.setFont("helvetica", "normal");
@@ -623,11 +613,11 @@
         doc.setTextColor(0, 0, 0);
         const textoMembrete = "Mediante el presente documento y de acuerdo con las condiciones comerciales establecidas, se da conformidad a la recepción de Mineral en Carbón Activado dentro de las instalaciones de la empresa CIA DE OPERACIONES MINERAS DEL SUR con RUC 20612160652, ubicado en Nro. SN. Sector Pampa Huanangurume - Chaparra - Caraveli - Arequipa.";
         const lineasMembrete = doc.splitTextToSize(textoMembrete, 166);
-        doc.text(lineasMembrete, 22, 66);
+        doc.text(lineasMembrete, 22, 68);
 
         // 4. METADATOS DE LA CARGA
         doc.setFontSize(9);
-        let y = 86;
+        let y = 88;
         const fechaActual = datos.fecha || new Date().toLocaleDateString('es-PE');
         const horaActual = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
         const proveedorNombre = datos.proveedor ? datos.proveedor.toUpperCase() : '-';
@@ -699,7 +689,7 @@
         doc.rect(136, finalY - 4, 34, 6);
         doc.text(`${pesoTotal.toFixed(2)}`, 168, finalY, { align: "right" });
 
-        // 7. BLOQUE DE FIRMAS PARALELO Y DINÁMICO
+        // 7. BLOQUE DE FIRMAS PARALELO
         const pieY = finalY + 30;
         
         doc.setLineWidth(0.4);
@@ -727,8 +717,7 @@
         doc.setFontSize(8.5);
         doc.setFont("helvetica", "bold");
         doc.text("Av. Circunvalación del Golf de Los Incas 134", 15, pageHeight - 14);
-        doc.text("Torre 2, Piso 6,", 15, pageHeight - 10);
-        doc.text("Santiago de Surco", 15, pageHeight - 6);
+        doc.text("Torre 2, Piso 6, Santiago de Surco", 15, pageHeight - 8);
 
         doc.save(`Acta_Recepcion_${datos.codigo_carga}.pdf`);
     }
