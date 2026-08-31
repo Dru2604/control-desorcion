@@ -127,8 +127,8 @@
         <h4 class="sidebar-title">CONTROL DE ACOPIO</h4>
         <div class="menu-items">
             <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)"><span class="icon">📝</span><span class="text-btn">Registrar Carga</span></button>
-            <button class="nav-btn" onclick="mostrarSeccion('secBuscar', this)"><span class="icon">🔍</span><span class="text-btn">Buscar y Filtrar</span></button>
             <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)"><span class="icon">📋</span><span class="text-btn">Historial General</span></button>
+            <button class="nav-btn" onclick="mostrarSeccion('secDeclaracion', this)"><span class="icon">📜</span><span class="text-btn">DJ Transportista</span></button>
             <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none;"><span class="icon">🔄</span><span class="text-btn">Carbón Desorbido</span></button>
             <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none;"><span class="icon">📈</span><span class="text-btn">Reportes Mensuales</span></button>
             <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none;"><span class="icon">📊</span><span class="text-btn">Control Maestro</span></button>
@@ -202,15 +202,26 @@
         </div>
     </div>
 
-    <!-- 2. BUSCAR -->
-    <div id="secBuscar" class="seccion-app">
+    <!-- 2. HISTORIAL GENERAL Y BÚSQUEDA INTEGRADA -->
+    <div id="secHistorial" class="seccion-app">
         <div class="card">
-            <h3>🔍 Motor de Búsqueda y Filtros</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 15px;">
-                <div><label>Buscar por Proveedor / Carga / Lote:</label><input type="text" id="srcTexto" oninput="filtrarTabla()" placeholder="Escribe texto..." autocomplete="off"></div>
-                <div><label>Filtrar por Fecha:</label><input type="date" id="srcFecha" onchange="filtrarTabla()"></div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3>📋 Historial Único de Cargas y Lotes</h3>
+                <button id="btnVaciar" onclick="borrarHistorial()" class="btn-peligro" style="display: none;">Vaciar Historial</button>
+            </div>
+
+            <!-- Filtros Integrados -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
                 <div>
-                    <label>Estado de Liquidación:</label>
+                    <label style="font-size: 11px;">🔍 Buscar (Proveedor / Carga / Lote):</label>
+                    <input type="text" id="srcTexto" oninput="filtrarTabla()" placeholder="Escribe para buscar..." autocomplete="off">
+                </div>
+                <div>
+                    <label style="font-size: 11px;">📅 Filtrar por Fecha:</label>
+                    <input type="date" id="srcFecha" onchange="filtrarTabla()">
+                </div>
+                <div>
+                    <label style="font-size: 11px;">📌 Estado de Liquidación:</label>
                     <select id="srcEstado" onchange="filtrarTabla()">
                         <option value="">-- Todos --</option>
                         <option value="Por Liquidar">Por Liquidar</option>
@@ -218,18 +229,97 @@
                     </select>
                 </div>
             </div>
+
+            <div id="contenedorHistorialSimplificado"></div>
         </div>
     </div>
 
-    <!-- 3. HISTORIAL GENERAL -->
-    <div id="secHistorial" class="seccion-app">
+    <!-- 3. DECLARACIÓN JURADA DEL TRANSPORTISTA -->
+    <div id="secDeclaracion" class="seccion-app">
         <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3>📋 Historial Único de Cargas y Lotes Desglosados</h3>
-                <button id="btnVaciar" onclick="borrarHistorial()" class="btn-peligro" style="display: none;">Vaciar Historial</button>
-            </div>
+            <h3>📜 Generar Declaración Jurada del Transportista</h3>
+            <p style="font-size: 12px; color: #718096; margin-bottom: 15px;">Ingresa los datos solicitados para generar el documento en formato PDF.</p>
 
-            <div id="contenedorHistorialSimplificado"></div>
+            <form id="formDeclaracionJurada" autocomplete="off">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">
+                    
+                    <div class="campo">
+                        <label>Nombre del Conductor:</label>
+                        <input type="text" id="djNombreConductor" required placeholder="Ej: WILBER CCOTO RAMOS">
+                    </div>
+                    <div class="campo">
+                        <label>DNI del Conductor:</label>
+                        <input type="text" id="djDniConductor" required placeholder="Ej: 24582514">
+                    </div>
+                    <div class="campo">
+                        <label>Licencia del Conductor:</label>
+                        <input type="text" id="djLicenciaConductor" required placeholder="Ej: H24582514">
+                    </div>
+
+                    <div class="campo">
+                        <label>Calidad en la Empresa:</label>
+                        <select id="djCalidadEmpresa" required>
+                            <option value="PROPIETARIO">PROPIETARIO</option>
+                            <option value="TRABAJADOR">TRABAJADOR</option>
+                        </select>
+                    </div>
+                    <div class="campo">
+                        <label>RUC de la Empresa:</label>
+                        <input type="text" id="djRucEmpresa" required placeholder="Ej: 10245825141">
+                    </div>
+                    <div class="campo">
+                        <label>Proveedor (Emisor de la Guía):</label>
+                        <input type="text" id="djProveedorEmisor" required placeholder="Ej: CCOTO RAMOS WILBER">
+                    </div>
+
+                    <div class="campo">
+                        <label>Fecha de Traslado:</label>
+                        <input type="date" id="djFechaTraslado" required>
+                    </div>
+                    <div class="campo">
+                        <label>Guía de Remisión:</label>
+                        <input type="text" id="djGuiaRemision" required placeholder="Ej: EG07-00000182">
+                    </div>
+                    <div class="campo">
+                        <label>Ruta Usada:</label>
+                        <input type="text" id="djRutaUsada" required placeholder="Ej: PANAMERICANA SUR">
+                    </div>
+
+                    <div class="campo" style="grid-column: span 2;">
+                        <label>Punto de Partida:</label>
+                        <input type="text" id="djPuntoPartida" required placeholder="Ej: NRO.S/N-CONCESION MINERA POSCO (01000002Y01) – MARIANO NICOLAS VALCARCEL – CAMANA – AREQUIPA">
+                    </div>
+                    <div class="campo" style="grid-column: span 2;">
+                        <label>Punto de Llegada:</label>
+                        <select id="djPuntoLlegada" required>
+                            <option value="SN. Sector Pampa Huangurume – Chaparra – Caraveli – Arequipa">SN. Sector Pampa Huangurume – Chaparra – Caraveli – Arequipa</option>
+                        </select>
+                    </div>
+
+                    <div class="campo">
+                        <label>Placa del Vehículo:</label>
+                        <input type="text" id="djPlacaVehiculo" required placeholder="Ej: VDL-921">
+                    </div>
+                    <div class="campo">
+                        <label>Propietario del Vehículo:</label>
+                        <input type="text" id="djPropietarioVehiculo" required placeholder="Ej: WILBER CCOTO RAMOS">
+                    </div>
+
+                    <div class="campo">
+                        <label>Fecha de Emisión del Documento:</label>
+                        <input type="date" id="djFechaDocumento" required>
+                    </div>
+                    <div class="campo">
+                        <label>Nombre a figurar en la Firma:</label>
+                        <input type="text" id="djNombreFirma" required placeholder="Ej: WILBER CCOTO RAMOS">
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; text-align: right;">
+                    <button type="button" onclick="copiarNombreConductorAFirma()" class="btn-secundario" style="margin-right: 10px;">Usar Nombre de Conductor en Firma</button>
+                    <button type="submit" class="btn-exito">📄 Generar y Descargar DJ (PDF)</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -530,21 +620,10 @@
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
         
         document.getElementById(id).classList.add('active');
-        if (id === 'secBuscar' || id === 'secHistorial') {
-            document.getElementById('secHistorial').classList.add('active');
-        }
         
-        if (id === 'secReportes') {
-            cargarReporteMensual();
-        }
-
-        if (id === 'secDesorcion') {
-            cargarCarbonDesorbido();
-        }
-
-        if (id === 'secGerencia') {
-            cargarControlMaestroGerencia();
-        }
+        if (id === 'secReportes') cargarReporteMensual();
+        if (id === 'secDesorcion') cargarCarbonDesorbido();
+        if (id === 'secGerencia') cargarControlMaestroGerencia();
 
         if (btn) btn.classList.add('active');
     }
@@ -581,10 +660,7 @@
             img.onload = function () {
                 const anchoOriginal = this.width;
                 const altoOriginal = this.height;
-                
-                // Ancho fijo A4 de la imagen en mm
                 const anchoPdf = 210; 
-                // Alto calculado automáticamente respetando la proporción exacta
                 const altoPdf = (altoOriginal * anchoPdf) / anchoOriginal;
 
                 const canvas = document.createElement('canvas');
@@ -611,15 +687,13 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
-        // El archivo encabezado.png debe estar junto a index.html en GitHub.
         const imgObj = await cargarImagenProporcional('./encabezado.png');
-        let altoHeader = 36.6; // Proporción de la imagen 1308 x 228 px en A4
+        let altoHeader = 36.6; 
 
         if (imgObj) {
             altoHeader = imgObj.alto;
             doc.addImage(imgObj.base64, 'PNG', 0, 0, imgObj.ancho, imgObj.alto);
         } else {
-            // Aviso visible si la imagen no se pudo cargar.
             doc.setFillColor(255, 255, 255);
             doc.rect(0, 0, 210, altoHeader, 'F');
             doc.setFont("helvetica", "bold");
@@ -628,14 +702,12 @@
             doc.text("No se encontró el archivo encabezado.png", 105, 18, { align: "center" });
         }
 
-        // 2. TÍTULO PRINCIPAL CENTRADO (Ajustado dinámicamente debajo de la cabecera)
         let posY = altoHeader + 12;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(13.5);
         doc.setTextColor(80, 80, 80);
         doc.text("ACTA DE RECEPCIÓN DE MINERAL", 105, posY, { align: "center" });
 
-        // 3. TEXTO LEGAL Y CONDICIONES
         posY += 10;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(8.5);
@@ -644,7 +716,6 @@
         const lineasMembrete = doc.splitTextToSize(textoMembrete, 166);
         doc.text(lineasMembrete, 22, posY);
 
-        // 4. METADATOS DE LA CARGA
         posY += 18;
         doc.setFontSize(9);
         const fechaActual = datos.fecha || new Date().toLocaleDateString('es-PE');
@@ -664,7 +735,6 @@
         
         posY += 8;
 
-        // 5. TABLA DE DETALLE DE LOTES (CARBON ACTIVADO – X SACOS)
         const filasTabla = [];
         let pesoTotal = 0;
 
@@ -710,7 +780,6 @@
             margin: { left: 22, right: 22 }
         });
 
-        // 6. TOTALIZADOR RECTANGULAR
         let finalY = doc.lastAutoTable.finalY + 6;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(10);
@@ -718,12 +787,11 @@
         doc.rect(136, finalY - 4, 34, 6);
         doc.text(`${pesoTotal.toFixed(2)}`, 168, finalY, { align: "right" });
 
-        // 7. BLOQUE DE FIRMAS
         const pieY = finalY + 30;
         
         doc.setLineWidth(0.4);
-        doc.line(25, pieY, 85, pieY);   // Firma Proveedor
-        doc.line(115, pieY, 175, pieY); // Firma OPESUR
+        doc.line(25, pieY, 85, pieY);   
+        doc.line(115, pieY, 175, pieY); 
 
         doc.setFontSize(8);
         doc.setFont("helvetica", "bold");
@@ -736,7 +804,6 @@
         doc.setFont("helvetica", "bolditalic");
         doc.text("OPESUR", 145, pieY + 12, { align: "center" });
 
-        // 8. PIE DE PÁGINA
         const pageHeight = doc.internal.pageSize.height;
         doc.setFillColor(34, 69, 67);
         doc.rect(0, pageHeight - 22, 210, 22, 'F');
@@ -771,6 +838,127 @@
 
         doc.save(`Guia_Devolucion_${datosEntrega.codigo_lote}.pdf`);
     }
+
+    // LÓGICA DECLARACIÓN JURADA DEL TRANSPORTISTA
+    function copiarNombreConductorAFirma() {
+        const nombre = document.getElementById('djNombreConductor').value;
+        if (nombre) {
+            document.getElementById('djNombreFirma').value = nombre;
+        } else {
+            alert('Ingresa primero el nombre del conductor.');
+        }
+    }
+
+    function formatearFechaEspanol(fechaStr) {
+        if (!fechaStr) return '';
+        const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const partes = fechaStr.split('-');
+        if (partes.length === 3) {
+            return `${parseInt(partes[2])} de ${meses[parseInt(partes[1]) - 1]} del ${partes[0]}`;
+        }
+        return fechaStr;
+    }
+
+    function formatearFechaCorta(fechaStr) {
+        if (!fechaStr) return '';
+        const partes = fechaStr.split('-');
+        if (partes.length === 3) return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        return fechaStr;
+    }
+
+    document.getElementById('formDeclaracionJurada').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        const nombreConductor = document.getElementById('djNombreConductor').value.toUpperCase();
+        const dniConductor = document.getElementById('djDniConductor').value;
+        const licenciaConductor = document.getElementById('djLicenciaConductor').value;
+        const calidadEmpresa = document.getElementById('djCalidadEmpresa').value;
+        const rucEmpresa = document.getElementById('djRucEmpresa').value;
+        const proveedorEmisor = document.getElementById('djProveedorEmisor').value.toUpperCase();
+        
+        const fechaTraslado = formatearFechaCorta(document.getElementById('djFechaTraslado').value);
+        const guiaRemision = document.getElementById('djGuiaRemision').value;
+        const rutaUsada = document.getElementById('djRutaUsada').value.toUpperCase();
+        
+        const puntoPartida = document.getElementById('djPuntoPartida').value.toUpperCase();
+        const puntoLlegada = document.getElementById('djPuntoLlegada').value;
+        
+        const placaVehiculo = document.getElementById('djPlacaVehiculo').value.toUpperCase();
+        const propietarioVehiculo = document.getElementById('djPropietarioVehiculo').value.toUpperCase();
+        
+        const fechaDocumentoTexto = formatearFechaEspanol(document.getElementById('djFechaDocumento').value);
+        const nombreFirma = document.getElementById('djNombreFirma').value;
+
+        let posY = 25;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(13);
+        doc.text("DECLARACIÓN JURADA DEL TRANSPORTISTA", 105, posY, { align: "center" });
+
+        posY += 15;
+        doc.setFontSize(10);
+        
+        const encabezado = `Yo, ${nombreConductor} ,identificado con DNI N° ${dniConductor} y licencia de conducir:${licenciaConductor}, en mi calidad de ${calidadEmpresa} de la empresa , identificada con RUC N°${rucEmpresa}declaro bajo juramento lo siguiente:`;
+        const lineasEncabezado = doc.splitTextToSize(encabezado, 165);
+        doc.setFont("helvetica", "normal");
+        doc.text(lineasEncabezado, 22, posY);
+
+        posY += (lineasEncabezado.length * 5) + 6;
+        const anchoMax = 165;
+
+        let txt1 = `1. Que efectué el traslado de carbón activado con contenido mineral en la fecha ${fechaTraslado}.`;
+        doc.text(doc.splitTextToSize(txt1, anchoMax), 22, posY);
+        posY += 10;
+
+        let txt2_partida = `2. Que el punto de partida del traslado fue ${puntoPartida}`;
+        let lineas2_1 = doc.splitTextToSize(txt2_partida, anchoMax);
+        doc.text(lineas2_1, 22, posY);
+        posY += (lineas2_1.length * 5) + 3;
+
+        let txt2_llegada = `y el punto de llegada fue ${puntoLlegada}.`;
+        let lineas2_2 = doc.splitTextToSize(txt2_llegada, anchoMax);
+        doc.text(lineas2_2, 22, posY);
+        posY += (lineas2_2.length * 5) + 5;
+
+        let txt3 = `3. Que la ruta utilizada para el traslado fue ${rutaUsada}.`;
+        doc.text(doc.splitTextToSize(txt3, anchoMax), 22, posY);
+        posY += 10;
+
+        let txt4 = `4. Que el vehículo utilizado cuenta con la placa N° ${placaVehiculo} , propiedad de ${propietarioVehiculo}.`;
+        let lineas4 = doc.splitTextToSize(txt4, anchoMax);
+        doc.text(lineas4, 22, posY);
+        posY += (lineas4.length * 5) + 5;
+
+        let txt5 = `5. Que el traslado se realizó conforme a la Guía de Remisión N° ${guiaRemision},emitida por ${proveedorEmisor} , la cual se encuentra debidamente vinculada a esta operación.`;
+        let lineas5 = doc.splitTextToSize(txt5, anchoMax);
+        doc.text(lineas5, 22, posY);
+        posY += (lineas5.length * 5) + 5;
+
+        let txt6 = `6. Que durante todo el trayecto el vehículo mantuvo las condiciones adecuadas de seguridad y cumplimiento normativo de transporte de carga minera.`;
+        let lineas6 = doc.splitTextToSize(txt6, anchoMax);
+        doc.text(lineas6, 22, posY);
+        posY += (lineas6.length * 5) + 8;
+
+        let txtResp = `Declaro bajo juramento que la información consignada es veraz y que asumo plena responsabilidad administrativa, civil y/o penal en caso de falsedad o inexactitud de los datos proporcionados.`;
+        let lineasResp = doc.splitTextToSize(txtResp, anchoMax);
+        doc.text(lineasResp, 22, posY);
+        posY += (lineasResp.length * 5) + 12;
+
+        doc.text(`En Chaparra, ${fechaDocumentoTexto}`, 22, posY);
+
+        posY += 30;
+        doc.setLineWidth(0.5);
+        doc.line(70, posY, 140, posY);
+
+        posY += 6;
+        doc.setFont("helvetica", "bold");
+        doc.text(nombreFirma, 105, posY, { align: "center" });
+
+        doc.save(`DJ_Transportista_${placaVehiculo}.pdf`);
+    });
 
     function abrirModalDevolucion(id, proveedor, lote, pesoBruto) {
         const pBruto = parseFloat(pesoBruto || 0);
@@ -1141,6 +1329,26 @@
         const res = await fetch(`${API_URL}/api/cargas`);
         const r = await res.json();
         if (r.success) { cargasGlobales = r.data; renderTablaSimplificada(cargasGlobales); }
+    }
+
+    function filtrarTabla() {
+        const texto = document.getElementById('srcTexto').value.toLowerCase();
+        const fecha = document.getElementById('srcFecha').value;
+        const estado = document.getElementById('srcEstado').value;
+
+        const filtrados = cargasGlobales.filter(c => {
+            const matchTexto = c.proveedor.toLowerCase().includes(texto) ||
+                               c.codigo_carga.toLowerCase().includes(texto) ||
+                               c.lotes.some(l => l.codigo_lote.toLowerCase().includes(texto));
+
+            const fechaCarga = new Date(c.fecha).toISOString().split('T')[0];
+            const matchFecha = !fecha || fechaCarga === fecha;
+            const matchEstado = !estado || c.estado === estado;
+
+            return matchTexto && matchFecha && matchEstado;
+        });
+
+        renderTablaSimplificada(filtrados);
     }
 
     function renderTablaSimplificada(lista) {
