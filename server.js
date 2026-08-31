@@ -13,6 +13,7 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
+// Middleware de verificación para Gerencia
 function verificarGerencia(req, res, next) {
   const rol = req.headers['x-rol-usuario'] || req.body.rol_usuario;
   if (rol !== 'GERENCIA') {
@@ -21,27 +22,47 @@ function verificarGerencia(req, res, next) {
   next();
 }
 
+// 1. AUTENTICACIÓN
 app.post('/api/login', async (req, res) => {
   const { usuario, password } = req.body;
   try {
     const result = await pool.query('SELECT usuario, nombre, rol FROM usuarios WHERE usuario = $1 AND password = $2', [usuario, password]);
-    if (result.rows.length > 0) res.json({ success: true, usuario: result.rows[0] });
-    else res.status(401).json({ success: false, error: 'Usuario o contraseña incorrectos.' });
-  } catch (err) { res.status(500).json({ success: false, error: 'Error en el servidor.' }); }
+    if (result.rows.length > 0) {
+      res.json({ success: true, usuario: result.rows[0] });
+    } else {
+      res.status(401).json({ success: false, error: 'Usuario o contraseña incorrectos.' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error en el servidor.' });
+  }
 });
 
+// 2. OBTENER CARGAS E HISTORIAL
 app.get('/api/cargas', async (req, res) => {
   try {
     const cargasResult = await pool.query('SELECT * FROM cargas ORDER BY fecha DESC');
     const cargas = cargasResult.rows;
+
     for (let carga of cargas) {
       const lotesResult = await pool.query('SELECT * FROM lotes WHERE carga_id = $1 ORDER BY id ASC', [carga.id]);
-      carga.lotes = lotesResult.rows;
+      
+      // Mapear descripción formateada sin el código de lote para el acta
+      carga.lotes = lotesResult.rows.map(lote => {
+        const cantSacos = lote.cantidad_sacos ? `${lote.cantidad_sacos} SACOS` : 'NUMERO DE SACOS';
+        return {
+          ...lote,
+          descripcion_acta: `CARBON ACTIVADO – ${cantSacos}`
+        };
+      });
     }
+
     res.json({ success: true, data: cargas });
-  } catch (err) { res.status(500).json({ success: false, error: 'Error al consultar cargas.' }); }
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al consultar cargas.' });
+  }
 });
 
+// 3. REGISTRAR NUEVA CARGA Y LOTES
 app.post('/api/cargas', async (req, res) => {
   const { 
     codigo_carga, proveedor, ruc_proveedor, numero_chaparra, guia_remision, guia_transportista, 
@@ -85,7 +106,12 @@ app.post('/api/cargas', async (req, res) => {
         `INSERT INTO lotes 
           (carga_id, codigo_lote, cantidad_sacos, peso_bruto, tara, peso_muestras_total, cantidad_muestras, peso_humedo_neto, porcentaje_humedad, descuento_humedad_kg, peso_seco_neto, pesos_muestras, ley_au_g_kg, ley_ag_g_kg, embalaje, punto_recepcion, ubicacion_fisica) 
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
-        [cargaId, lote.codigo_lote, cantidadSacos, pesoBruto, tara, pesoMuestrasKg.toFixed(3), arrayMuestrasGramos.length, pesoNetoHumedo.toFixed(2), porcentajeHumedad, descuentoHumedadKg.toFixed(2), pesoSecoNeto.toFixed(2), JSON.stringify(arrayMuestrasGramos), Number(lote.ley_au_g_kg) || 0, Number(lote.ley_ag_g_kg) || 0, 'SACOS', 'CHAPARRA', 'Stock físico']
+        [
+          cargaId, lote.codigo_lote, cantidadSacos, pesoBruto, tara, pesoMuestrasKg.toFixed(3), 
+          arrayMuestrasGramos.length, pesoNetoHumedo.toFixed(2), porcentajeHumedad, 
+          descuentoHumedadKg.toFixed(2), Math.max(0, pesoSecoNeto).toFixed(2), JSON.stringify(arrayMuestrasGramos), 
+          Number(lote.ley_au_g_kg) || 0, Number(lote.ley_ag_g_kg) || 0, 'SACOS', 'CHAPARRA', 'Stock físico'
+        ]
       );
     }
 
@@ -94,19 +120,27 @@ app.post('/api/cargas', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ success: false, error: 'Error al guardar la carga.' });
-  } finally { client.release(); }
+  } finally { 
+    client.release(); 
+  }
 });
 
+// 4. CAMBIAR ESTADO DE CARGA
 app.patch('/api/cargas/:id/estado', async (req, res) => {
   const { id } = req.params;
   const { estado, rol_usuario } = req.body;
-  if (rol_usuario !== 'ADMIN' && rol_usuario !== 'SUPERVISOR' && rol_usuario !== 'GERENCIA') return res.status(403).json({ success: false, error: 'Sin permisos.' });
+  if (rol_usuario !== 'ADMIN' && rol_usuario !== 'SUPERVISOR' && rol_usuario !== 'GERENCIA') {
+    return res.status(403).json({ success: false, error: 'Sin permisos.' });
+  }
   try {
     await pool.query('UPDATE cargas SET estado = $1 WHERE id = $2', [estado, id]);
     res.json({ success: true });
-  } catch (err) { res.status(500).json({ success: false, error: 'Error al actualizar.' }); }
+  } catch (err) { 
+    res.status(500).json({ success: false, error: 'Error al actualizar.' }); 
+  }
 });
 
+// 5. VACIAR BASE DE DATOS
 app.delete('/api/cargas', async (req, res) => {
   const { rol_usuario } = req.body;
   if (rol_usuario !== 'ADMIN' && rol_usuario !== 'GERENCIA') {
@@ -130,6 +164,7 @@ app.delete('/api/cargas', async (req, res) => {
   }
 });
 
+// 6. REPORTES MENSUALES
 app.get('/api/reportes/mensual', async (req, res) => {
   const rol = req.headers['x-rol-usuario'];
   if (rol !== 'ADMIN' && rol !== 'GERENCIA') return res.status(403).json({ success: false, error: 'Acceso denegado.' });
@@ -141,7 +176,7 @@ app.get('/api/reportes/mensual', async (req, res) => {
         COUNT(DISTINCT c.id) AS total_cargas,
         COUNT(l.id) AS total_lotes,
         COALESCE(SUM(l.peso_bruto), 0) AS peso_bruto_total,
-        COALESCE(SUM(l.peso_seco_total), 0) AS peso_seco_total,
+        COALESCE(SUM(l.peso_seco_neto), 0) AS peso_seco_total,
         COALESCE(SUM((l.peso_seco_neto * l.ley_au_g_kg) / 31.1035), 0) AS au_oz_total,
         COALESCE(SUM((((l.peso_seco_neto * l.ley_au_g_kg) / 31.1035) * 4600)), 0) AS valor_usd_total
       FROM cargas c LEFT JOIN lotes l ON c.id = l.carga_id
@@ -150,9 +185,12 @@ app.get('/api/reportes/mensual', async (req, res) => {
     `;
     const { rows } = await pool.query(query);
     res.json({ success: true, data: rows });
-  } catch (err) { res.status(500).json({ success: false, error: 'Error al generar reporte.' }); }
+  } catch (err) { 
+    res.status(500).json({ success: false, error: 'Error al generar reporte.' }); 
+  }
 });
 
+// 7. CONSULTAR MOVIMIENTOS Y PENDIENTES
 app.get('/api/carbon-desorbido', async (req, res) => {
   try {
     const movimientosResult = await pool.query('SELECT * FROM inventario_carbon_desorbido ORDER BY fecha DESC');
@@ -163,9 +201,12 @@ app.get('/api/carbon-desorbido', async (req, res) => {
       ORDER BY c.proveedor ASC, l.codigo_lote ASC
     `);
     res.json({ success: true, movimientos: movimientosResult.rows, pendientesDevolucion: pendientesResult.rows });
-  } catch (err) { res.status(500).json({ success: false, error: 'Error al consultar inventario.' }); }
+  } catch (err) { 
+    res.status(500).json({ success: false, error: 'Error al consultar inventario.' }); 
+  }
 });
 
+// 8. REGISTRAR MOVIMIENTO DE CARBÓN DESORBIDO
 app.post('/api/carbon-desorbido', async (req, res) => {
   const { tipo_movimiento, proveedor, codigo_lote, peso_seco_kg, observaciones, usuario_registro, lote_id } = req.body;
   const client = await pool.connect();
@@ -186,9 +227,12 @@ app.post('/api/carbon-desorbido', async (req, res) => {
   } catch (err) {
     await client.query('ROLLBACK');
     res.status(500).json({ success: false, error: 'Error interno al registrar el movimiento.' });
-  } finally { client.release(); }
+  } finally { 
+    client.release(); 
+  }
 });
 
+// 9. CONTROL MAESTRO GERENCIA
 app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => {
   try {
     const paramsRes = await pool.query('SELECT * FROM parametros_gerencia ORDER BY id DESC LIMIT 1');
@@ -209,7 +253,9 @@ app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => 
     `;
     const { rows } = await pool.query(query, [factor, precioAu, precioAg]);
     res.json({ success: true, parametros: params, data: rows });
-  } catch (err) { res.status(500).json({ success: false, error: 'Error al generar reporte maestro.' }); }
+  } catch (err) { 
+    res.status(500).json({ success: false, error: 'Error al generar reporte maestro.' }); 
+  }
 });
 
 app.listen(port, () => console.log(`Servidor ejecutándose en el puerto ${port}`));
