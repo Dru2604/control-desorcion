@@ -43,14 +43,27 @@ app.get('/api/cargas', async (req, res) => {
 });
 
 app.post('/api/cargas', async (req, res) => {
-  const { codigo_carga, proveedor, usuario_registro, fecha_operacion, lotes } = req.body;
+  const { 
+    codigo_carga, proveedor, ruc_proveedor, numero_chaparra, guia_remision, guia_transportista, 
+    usuario_registro, fecha_operacion, lotes 
+  } = req.body;
+  
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
-    let resCarga = fecha_operacion 
-      ? await client.query('INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado, fecha) VALUES ($1, $2, $3, $4, $5) RETURNING id', [codigo_carga, proveedor, usuario_registro, 'Por Liquidar', fecha_operacion])
-      : await client.query('INSERT INTO cargas (codigo_carga, proveedor, usuario_registro, estado) VALUES ($1, $2, $3, $4) RETURNING id', [codigo_carga, proveedor, usuario_registro, 'Por Liquidar']);
+    
+    const resCarga = fecha_operacion 
+      ? await client.query(
+          `INSERT INTO cargas (codigo_carga, proveedor, ruc_proveedor, numero_chaparra, guia_remision, guia_transportista, usuario_registro, estado, fecha) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`, 
+          [codigo_carga, proveedor, ruc_proveedor || '', numero_chaparra || '', guia_remision || '', guia_transportista || '', usuario_registro, 'Por Liquidar', fecha_operacion]
+        )
+      : await client.query(
+          `INSERT INTO cargas (codigo_carga, proveedor, ruc_proveedor, numero_chaparra, guia_remision, guia_transportista, usuario_registro, estado) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`, 
+          [codigo_carga, proveedor, ruc_proveedor || '', numero_chaparra || '', guia_remision || '', guia_transportista || '', usuario_registro, 'Por Liquidar']
+        );
 
     const cargaId = resCarga.rows[0].id;
 
@@ -62,6 +75,7 @@ app.post('/api/cargas', async (req, res) => {
       const pesoBruto = Number(lote.peso_bruto) || 0;
       const tara = Number(lote.tara) || 0;
       const porcentajeHumedad = Number(lote.porcentaje_humedad) || 0;
+      const cantidadSacos = Number(lote.cantidad_sacos) || 0;
 
       const pesoNetoHumedo = pesoBruto - tara - pesoMuestrasKg;
       const descuentoHumedadKg = pesoNetoHumedo * (porcentajeHumedad / 100);
@@ -69,9 +83,9 @@ app.post('/api/cargas', async (req, res) => {
 
       await client.query(
         `INSERT INTO lotes 
-          (carga_id, codigo_lote, peso_bruto, tara, peso_muestras_total, cantidad_muestras, peso_humedo_neto, porcentaje_humedad, descuento_humedad_kg, peso_seco_neto, pesos_muestras, ley_au_g_kg, ley_ag_g_kg, embalaje, punto_recepcion, ubicacion_fisica) 
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
-        [cargaId, lote.codigo_lote, pesoBruto, tara, pesoMuestrasKg.toFixed(3), arrayMuestrasGramos.length, pesoNetoHumedo.toFixed(2), porcentajeHumedad, descuentoHumedadKg.toFixed(2), pesoSecoNeto.toFixed(2), JSON.stringify(arrayMuestrasGramos), Number(lote.ley_au_g_kg) || 0, Number(lote.ley_ag_g_kg) || 0, 'SACOS', 'CHAPARRA', 'Stock físico']
+          (carga_id, codigo_lote, cantidad_sacos, peso_bruto, tara, peso_muestras_total, cantidad_muestras, peso_humedo_neto, porcentaje_humedad, descuento_humedad_kg, peso_seco_neto, pesos_muestras, ley_au_g_kg, ley_ag_g_kg, embalaje, punto_recepcion, ubicacion_fisica) 
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+        [cargaId, lote.codigo_lote, cantidadSacos, pesoBruto, tara, pesoMuestrasKg.toFixed(3), arrayMuestrasGramos.length, pesoNetoHumedo.toFixed(2), porcentajeHumedad, descuentoHumedadKg.toFixed(2), pesoSecoNeto.toFixed(2), JSON.stringify(arrayMuestrasGramos), Number(lote.ley_au_g_kg) || 0, Number(lote.ley_ag_g_kg) || 0, 'SACOS', 'CHAPARRA', 'Stock físico']
       );
     }
 
@@ -79,7 +93,7 @@ app.post('/api/cargas', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
-    res.status(500).json({ success: false, error: 'Error al guardar.' });
+    res.status(500).json({ success: false, error: 'Error al guardar la carga.' });
   } finally { client.release(); }
 });
 
@@ -127,7 +141,7 @@ app.get('/api/reportes/mensual', async (req, res) => {
         COUNT(DISTINCT c.id) AS total_cargas,
         COUNT(l.id) AS total_lotes,
         COALESCE(SUM(l.peso_bruto), 0) AS peso_bruto_total,
-        COALESCE(SUM(l.peso_seco_neto), 0) AS peso_seco_total,
+        COALESCE(SUM(l.peso_seco_total), 0) AS peso_seco_total,
         COALESCE(SUM((l.peso_seco_neto * l.ley_au_g_kg) / 31.1035), 0) AS au_oz_total,
         COALESCE(SUM((((l.peso_seco_neto * l.ley_au_g_kg) / 31.1035) * 4600)), 0) AS valor_usd_total
       FROM cargas c LEFT JOIN lotes l ON c.id = l.carga_id
