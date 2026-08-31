@@ -46,7 +46,6 @@ app.get('/api/cargas', async (req, res) => {
     for (let carga of cargas) {
       const lotesResult = await pool.query('SELECT * FROM lotes WHERE carga_id = $1 ORDER BY id ASC', [carga.id]);
       
-      // Mapear descripción formateada sin el código de lote para el acta
       carga.lotes = lotesResult.rows.map(lote => {
         const cantSacos = lote.cantidad_sacos ? `${lote.cantidad_sacos} SACOS` : 'NUMERO DE SACOS';
         return {
@@ -125,7 +124,43 @@ app.post('/api/cargas', async (req, res) => {
   }
 });
 
-// 4. CAMBIAR ESTADO DE CARGA
+// 4. DECLARACIONES JURADAS DE TRANSPORTISTAS (GUARDAR Y LISTAR)
+app.get('/api/declaraciones', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM declaraciones_juradas ORDER BY created_at DESC');
+    res.json({ success: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Error al obtener declaraciones juradas.' });
+  }
+});
+
+app.post('/api/declaraciones', async (req, res) => {
+  const {
+    nombre_conductor, dni_conductor, licencia_conductor, calidad_empresa, ruc_empresa,
+    proveedor_emisor, fecha_traslado, guia_remision, ruta_usada, punto_partida,
+    punto_llegada, placa_vehiculo, propietario_vehiculo, fecha_documento, nombre_firma, usuario_registro
+  } = req.body;
+
+  try {
+    const result = await pool.query(
+      `INSERT INTO declaraciones_juradas 
+        (nombre_conductor, dni_conductor, licencia_conductor, calidad_empresa, ruc_empresa, proveedor_emisor, fecha_traslado, guia_remision, ruta_usada, punto_partida, punto_llegada, placa_vehiculo, propietario_vehiculo, fecha_documento, nombre_firma, usuario_registro)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
+      [
+        nombre_conductor, dni_conductor, licencia_conductor, calidad_empresa, ruc_empresa,
+        proveedor_emisor, fecha_traslado, guia_remision, ruta_usada, punto_partida,
+        punto_llegada, placa_vehiculo, propietario_vehiculo, fecha_documento, nombre_firma, usuario_registro
+      ]
+    );
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (err) {
+    console.error('Error guardar DJ:', err);
+    res.status(500).json({ success: false, error: 'Error al guardar la Declaración Jurada.' });
+  }
+});
+
+// 5. CAMBIAR ESTADO DE CARGA
 app.patch('/api/cargas/:id/estado', async (req, res) => {
   const { id } = req.params;
   const { estado, rol_usuario } = req.body;
@@ -140,7 +175,7 @@ app.patch('/api/cargas/:id/estado', async (req, res) => {
   }
 });
 
-// 5. VACIAR BASE DE DATOS
+// 6. VACIAR BASE DE DATOS
 app.delete('/api/cargas', async (req, res) => {
   const { rol_usuario } = req.body;
   if (rol_usuario !== 'ADMIN' && rol_usuario !== 'GERENCIA') {
@@ -153,6 +188,7 @@ app.delete('/api/cargas', async (req, res) => {
     await client.query('TRUNCATE TABLE inventario_carbon_desorbido RESTART IDENTITY CASCADE');
     await client.query('TRUNCATE TABLE lotes RESTART IDENTITY CASCADE');
     await client.query('TRUNCATE TABLE cargas RESTART IDENTITY CASCADE');
+    await client.query('TRUNCATE TABLE declaraciones_juradas RESTART IDENTITY CASCADE');
     await client.query('COMMIT');
 
     res.json({ success: true, message: 'Historial vaciado completamente.' });
@@ -164,7 +200,7 @@ app.delete('/api/cargas', async (req, res) => {
   }
 });
 
-// 6. REPORTES MENSUALES
+// 7. REPORTES MENSUALES
 app.get('/api/reportes/mensual', async (req, res) => {
   const rol = req.headers['x-rol-usuario'];
   if (rol !== 'ADMIN' && rol !== 'GERENCIA') return res.status(403).json({ success: false, error: 'Acceso denegado.' });
@@ -190,7 +226,7 @@ app.get('/api/reportes/mensual', async (req, res) => {
   }
 });
 
-// 7. CONSULTAR MOVIMIENTOS Y PENDIENTES
+// 8. CONSULTAR MOVIMIENTOS Y PENDIENTES
 app.get('/api/carbon-desorbido', async (req, res) => {
   try {
     const movimientosResult = await pool.query('SELECT * FROM inventario_carbon_desorbido ORDER BY fecha DESC');
@@ -206,7 +242,7 @@ app.get('/api/carbon-desorbido', async (req, res) => {
   }
 });
 
-// 8. REGISTRAR MOVIMIENTO DE CARBÓN DESORBIDO
+// 9. REGISTRAR MOVIMIENTO DE CARBÓN DESORBIDO
 app.post('/api/carbon-desorbido', async (req, res) => {
   const { tipo_movimiento, proveedor, codigo_lote, peso_seco_kg, observaciones, usuario_registro, lote_id } = req.body;
   const client = await pool.connect();
@@ -232,7 +268,7 @@ app.post('/api/carbon-desorbido', async (req, res) => {
   }
 });
 
-// 9. CONTROL MAESTRO GERENCIA
+// 10. CONTROL MAESTRO GERENCIA
 app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => {
   try {
     const paramsRes = await pool.query('SELECT * FROM parametros_gerencia ORDER BY id DESC LIMIT 1');
