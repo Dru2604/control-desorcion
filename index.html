@@ -784,7 +784,6 @@
         }
     }
 
-    // CARGADOR PROPORCIONAL DE IMAGEN PARA PROCESAR EL ENCABEZADO EXACTO
     function cargarImagenProporcional(url) {
         return new Promise((resolve) => {
             const img = new Image();
@@ -813,7 +812,6 @@
         });
     }
 
-    // GENERADOR DEL ACTA OFICIAL DE RECEPCIÓN DE MINERAL
     async function generarActaRecepcionPDF(datos) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
@@ -970,7 +968,6 @@
         doc.save(`Guia_Devolucion_${datosEntrega.codigo_lote}.pdf`);
     }
 
-    // LÓGICA DECLARACIÓN JURADA DEL TRANSPORTISTA CON ENCABEZADO Y PIE INSTITUCIONAL
     function copiarNombreConductorAFirma() {
         const nombre = document.getElementById('djNombreConductor').value;
         if (nombre) {
@@ -1217,14 +1214,12 @@
         await generarPdfDeclaracion(djData);
     }
 
-    // CERTIFICADO DE PROCEDENCIA MINERA
     async function generarPdfCertificado(datos) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
 
         let posY = 25;
 
-        // TÍTULO CON SUBRAYADO
         doc.setFont("helvetica", "bold");
         doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
@@ -1232,7 +1227,6 @@
         doc.setLineWidth(0.5);
         doc.line(48, posY + 1, 162, posY + 1);
 
-        // PÁRRAFO DE PRESENTACIÓN Y DECLARACIÓN
         posY += 12;
         doc.setFont("helvetica", "normal");
         doc.setFontSize(9.5);
@@ -1249,7 +1243,6 @@
         const anchoMax = 158;
         posY += 8;
 
-        // NUMERALES LEGALES
         doc.setFont("helvetica", "normal");
 
         let txt1 = `1.  El mineral aurífero que extraigo de la Concesión Minera ha sido obtenido de manera legal, en aplicación de las normas del proceso de formalización de la minería informal al cual me he acogido y me encuentro con inscripción vigente en el Registro Integral de Formalización de la Minería Informal - REINFO; por tanto, no provienen de la minería ilegal ni de cualquier otro acto que pudiera ser vinculado directa o indirectamente a dicha actividad.`;
@@ -1277,7 +1270,6 @@
         doc.text(lineas5, 22, posY);
         posY += (lineas5.length * 4.4) + 5;
 
-        // PÁRRAFO DE EXONERACIÓN Y RESPONSABILIDAD
         let txtExencion = `En virtud de lo declarado en este documento, eximo de toda responsabilidad a COMPAÑIA DE OPERACIONES MINERAS DEL SUR S.A.C. , sus afiliadas, subsidiarias o vinculadas, respecto de la obtención de los minerales que extraigo de la Concesión Minera, adquiero, comercializó y exporto; por tanto, declaro asumir todas las obligaciones y responsabilidades ante las autoridades del Perú y ante COMPAÑIA DE OPERACIONES MINERAS DEL SUR S.A.C. que se pudiera derivar de una declaración considerada incompleta, inexacta y/o falsa.`;
         let lineasEx = doc.splitTextToSize(txtExencion, 165);
         doc.text(lineasEx, 22, posY);
@@ -1291,20 +1283,17 @@
         const fechaEmisionEspanol = formatearFechaEspanol(datos.fecha_emision);
         doc.text(`Chaparra, ${fechaEmisionEspanol}`, 22, posY);
 
-        // SECCIÓN DE FIRMA Y HUELLA DIGITAL
         posY += 16;
         doc.setFont("helvetica", "bold");
         doc.text("Firma:", 22, posY);
         doc.setLineWidth(0.4);
         doc.line(38, posY, 105, posY);
 
-        // RECUADRO DE HUELLA DIGITAL
         doc.rect(122, posY - 8, 22, 28);
         doc.setFontSize(7.5);
         doc.setFont("helvetica", "normal");
         doc.text("(Huella Digital)", 133, posY + 23, { align: "center" });
 
-        // DATOS DEL FIRMANTE
         doc.setFontSize(9.5);
         posY += 10;
         doc.setFont("helvetica", "bold");
