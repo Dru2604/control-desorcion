@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Control de Desorción</title>
     
-    <!-- Librerías Externas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -64,7 +63,6 @@
         .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
         
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
-
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
     </style>
 </head>
@@ -73,17 +71,17 @@
     <!-- LOGIN -->
     <div id="loginSection">
         <div class="login-box">
-            <img src="logo.jpeg" alt="Logo OPESUR" class="logo-login" onerror="this.src='https://via.placeholder.com/100'">
+            <img src="logo.jpeg" alt="Logo" class="logo-login" onerror="this.src='https://via.placeholder.com/100'">
             <h3>Ingreso al Sistema</h3>
-            <p style="font-size: 12px; color: #a0aec0; margin-bottom: 20px;">OPESUR - Control de Acopio</p>
+            <p style="font-size: 12px; color: #a0aec0; margin-bottom: 20px;">Control de Carbón y Desorción</p>
             
             <form id="formLogin" autocomplete="off">
                 <div class="campo">
-                    <label for="userLogin">Usuario:</label>
+                    <label>Usuario:</label>
                     <input type="text" id="userLogin" required placeholder="Ej: admin">
                 </div>
                 <div class="campo">
-                    <label for="passLogin">Contraseña:</label>
+                    <label>Contraseña:</label>
                     <input type="password" id="passLogin" required placeholder="••••••••">
                 </div>
                 <button type="submit" style="width: 100%; margin-top: 10px;">Ingresar</button>
@@ -98,13 +96,13 @@
             <img src="logo.jpeg" alt="Logo" class="logo-sidebar" onerror="this.src='https://via.placeholder.com/70'">
             <h4 class="sidebar-title">CONTROL DE ACOPIO</h4>
             <nav class="menu-items">
-                <button class="nav-btn active" data-section="secNuevo">📝 Registrar Carga</button>
-                <button class="nav-btn" data-section="secHistorial">📋 Historial General</button>
-                <button class="nav-btn" data-section="secDeclaracion">📜 DJ Transportista</button>
-                <button class="nav-btn" data-section="secCertificado">📄 Cert. Procedencia</button>
-                <button id="btnMenuDesorcion" class="nav-btn" data-section="secDesorcion" style="display: none;">🔄 Carbón Desorbido</button>
-                <button id="btnMenuReportes" class="nav-btn" data-section="secReportes" style="display: none;">📈 Reportes Mensuales</button>
-                <button id="btnMenuGerencia" class="nav-btn" data-section="secGerencia" style="display: none;">📊 Control Maestro</button>
+                <button class="nav-btn active" onclick="mostrarSeccion('secNuevo', this)">📝 Registrar Carga</button>
+                <button class="nav-btn" onclick="mostrarSeccion('secHistorial', this)">📋 Historial General</button>
+                <button class="nav-btn" onclick="mostrarSeccion('secDeclaracion', this)">📜 DJ Transportista</button>
+                <button class="nav-btn" onclick="mostrarSeccion('secCertificado', this)">📄 Cert. Procedencia</button>
+                <button id="btnMenuDesorcion" class="nav-btn" onclick="mostrarSeccion('secDesorcion', this)" style="display: none;">🔄 Carbón Desorbido</button>
+                <button id="btnMenuReportes" class="nav-btn" onclick="mostrarSeccion('secReportes', this)" style="display: none;">📈 Reportes Mensuales</button>
+                <button id="btnMenuGerencia" class="nav-btn" onclick="mostrarSeccion('secGerencia', this)" style="display: none;">📊 Control Maestro</button>
             </nav>
         </div>
         
@@ -116,7 +114,7 @@
                     <span id="lblRolUsuario" class="badge" style="margin-top: 4px; display: inline-block;">-</span>
                 </div>
             </div>
-            <button id="btnLogout" class="btn-peligro" style="width: 100%; padding: 7px; font-size: 12px; margin-top: 12px;">Cerrar Sesión</button>
+            <button onclick="cerrarSesion()" class="btn-peligro" style="width: 100%; padding: 7px; font-size: 12px; margin-top: 12px;">Cerrar Sesión</button>
         </div>
     </aside>
 
@@ -127,7 +125,7 @@
         <section id="secNuevo" class="seccion-app active">
             <div class="card">
                 <h3>📦 Registrar Nueva Carga y Lotes</h3>
-                <form id="formCarga" autocomplete="off">
+                <form id="formCarga" autocomplete="off" onsubmit="guardarCarga(event)">
                     <div class="grid-3">
                         <div class="campo"><label>N° de Operación:</label><input type="text" id="codigo_carga" required placeholder="Ej: OPE-170326"></div>
                         <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="proveedor" required placeholder="Ej: WILBER CCOTO"></div>
@@ -142,7 +140,7 @@
                         <h4>Lotes Pertenecientes a esta Carga</h4>
                     </div>
 
-                    <button type="button" id="btnAgregarLote" class="btn-secundario" style="margin-bottom: 15px;">+ Agregar Otro Lote</button>
+                    <button type="button" onclick="agregarLoteHTML()" class="btn-secundario" style="margin-bottom: 15px;">+ Agregar Otro Lote</button>
                     <br>
                     <button type="submit" id="btnGuardarCarga">Guardar Carga y Generar Acta</button>
                 </form>
@@ -154,14 +152,14 @@
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                     <h3>📋 Historial Único de Cargas y Lotes</h3>
-                    <button id="btnVaciar" class="btn-peligro" style="display: none;">Vaciar Historial</button>
+                    <button id="btnVaciar" class="btn-peligro" onclick="vaciarBaseDatos()" style="display: none;">Vaciar Historial</button>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 20px; background: #f8fafc; padding: 12px; border-radius: 8px;">
-                    <div><label>🔍 Buscar:</label><input type="text" id="srcTexto" placeholder="Buscar por código o proveedor..."></div>
-                    <div><label>📅 Fecha:</label><input type="date" id="srcFecha"></div>
+                    <div><label>🔍 Buscar:</label><input type="text" id="srcTexto" oninput="filtrarHistorial()" placeholder="Buscar por código o proveedor..."></div>
+                    <div><label>📅 Fecha:</label><input type="date" id="srcFecha" onchange="filtrarHistorial()"></div>
                     <div>
                         <label>📌 Estado:</label>
-                        <select id="srcEstado">
+                        <select id="srcEstado" onchange="filtrarHistorial()">
                             <option value="">-- Todos --</option>
                             <option value="Por Liquidar">Por Liquidar</option>
                             <option value="Liquidado">Liquidado</option>
@@ -172,11 +170,11 @@
             </div>
         </section>
 
-        <!-- 3. DECLARACIÓN JURADA DEL TRANSPORTISTA (EXACTO A TUS CAPTURAS) -->
+        <!-- 3. DECLARACIÓN JURADA DEL TRANSPORTISTA -->
         <section id="secDeclaracion" class="seccion-app">
             <div class="card">
                 <h3>📜 Declaración Jurada del Transportista</h3>
-                <form id="formDeclaracionJurada" style="margin-bottom: 25px;">
+                <form id="formDeclaracionJurada" style="margin-bottom: 25px;" onsubmit="guardarDeclaracionJurada(event)">
                     <div class="grid-3">
                         <div class="campo"><label>Nombre del Conductor:</label><input type="text" id="dj_nombre" required></div>
                         <div class="campo"><label>DNI Conductor:</label><input type="text" id="dj_dni" required></div>
@@ -216,11 +214,11 @@
             </div>
         </section>
 
-        <!-- 4. CERTIFICADO DE PROCEDENCIA (EXACTO A TUS CAPTURAS) -->
+        <!-- 4. CERTIFICADO DE PROCEDENCIA -->
         <section id="secCertificado" class="seccion-app">
             <div class="card">
                 <h3>📄 Certificado de Procedencia de Mineral</h3>
-                <form id="formCertificado" style="margin-bottom: 25px;">
+                <form id="formCertificado" style="margin-bottom: 25px;" onsubmit="guardarCertificado(event)">
                     <div class="grid-3">
                         <div class="campo"><label>Nombre Declarante:</label><input type="text" id="cert_declarante" required></div>
                         <div class="campo"><label>DNI Declarante:</label><input type="text" id="cert_dni_declarante" required></div>
@@ -259,7 +257,7 @@
             </div>
         </section>
 
-        <!-- 5. CARBÓN DESORBIDO (EXACTO A TUS CAPTURAS) -->
+        <!-- 5. CARBÓN DESORBIDO -->
         <section id="secDesorcion" class="seccion-app">
             <div class="card">
                 <h3>🔄 Control de Carbón Desorbido</h3>
@@ -289,188 +287,210 @@
 
     </main>
 
-    <!-- LOGICA JAVASCRIPT -->
+    <!-- SCRIPT JAVASCRIPT ORIGINAL -->
     <script>
-        const CONFIG = {
-            API_URL: 'https://backend-desorcion.onrender.com',
-            STORAGE_KEY: 'jwt_auth_token'
-        };
+        const API_URL = 'https://backend-desorcion.onrender.com';
+        let usuarioSesion = null;
+        let listaCargasGlobal = [];
+        let contadorLotesGlobal = 0;
+        let chartKgInstance = null;
+        let chartValorInstance = null;
 
-        const State = {
-            user: null,
-            cargas: [],
-            declaraciones: [],
-            certificados: [],
-            lotesForm: [],
-            charts: { kg: null, valor: null }
-        };
-
-        function escapeHTML(str) {
-            if (str === null || str === undefined) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
-
-        async function apiFetch(endpoint, options = {}) {
-            const token = sessionStorage.getItem(CONFIG.STORAGE_KEY);
-            const headers = {
-                'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` }),
-                ...options.headers
-            };
-
-            try {
-                const response = await fetch(`${CONFIG.API_URL}${endpoint}`, { ...options, headers });
-                if (response.status === 401 || response.status === 403) {
-                    cerrarSesion();
-                    throw new Error('Sesión expirada o no autorizada.');
-                }
-                const data = await response.json();
-                if (!response.ok || !data.success) {
-                    throw new Error(data.error || 'Error en el servidor.');
-                }
-                return data;
-            } catch (err) {
-                console.error(`[API Error] ${endpoint}:`, err);
-                throw err;
-            }
-        }
-
-        // LOGIN
-        document.getElementById('formLogin').addEventListener('submit', async (e) => {
+        // LOGIN ORIGINAL
+        document.getElementById('formLogin').addEventListener('submit', async function(e) {
             e.preventDefault();
-            const usuario = document.getElementById('userLogin').value.trim();
-            const password = document.getElementById('passLogin').value.trim();
+            const u = document.getElementById('userLogin').value.trim();
+            const p = document.getElementById('passLogin').value.trim();
             const errLbl = document.getElementById('loginError');
 
             try {
-                const res = await apiFetch('/api/login', {
+                const res = await fetch(`${API_URL}/api/login`, {
                     method: 'POST',
-                    body: JSON.stringify({ usuario, password })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ usuario: u, password: p })
                 });
-                
-                sessionStorage.setItem(CONFIG.STORAGE_KEY, res.token);
-                State.user = res.usuario;
-                iniciarAplicacion();
+                const data = await res.json();
+
+                if (data.success) {
+                    usuarioSesion = data.usuario;
+                    sessionStorage.setItem('sesionDesorcion', JSON.stringify(usuarioSesion));
+                    iniciarApp();
+                } else {
+                    errLbl.style.display = 'block';
+                    errLbl.innerText = data.error || 'Usuario o contraseña incorrectos.';
+                }
             } catch (err) {
                 errLbl.style.display = 'block';
-                errLbl.textContent = err.message;
+                errLbl.innerText = 'Error de conexión con el servidor.';
             }
         });
 
-        function cerrarSesion() {
-            sessionStorage.removeItem(CONFIG.STORAGE_KEY);
-            State.user = null;
-            location.reload();
-        }
-
-        function iniciarAplicacion() {
+        function iniciarApp() {
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('sidebarApp').style.display = 'flex';
             document.getElementById('mainApp').style.display = 'block';
 
-            document.getElementById('lblNombreUsuario').textContent = State.user.nombre;
-            document.getElementById('lblRolUsuario').textContent = State.user.rol;
+            document.getElementById('lblNombreUsuario').innerText = usuarioSesion.nombre;
+            document.getElementById('lblRolUsuario').innerText = usuarioSesion.rol;
 
-            configurarPermisosPorRol();
-            inicializarFormLotes();
-            cargarDatosParalelos();
-        }
-
-        function configurarPermisosPorRol() {
-            const { rol } = State.user;
-            if (rol === 'ADMIN' || rol === 'GERENCIA') {
+            if (usuarioSesion.rol === 'ADMIN' || usuarioSesion.rol === 'GERENCIA') {
                 document.getElementById('btnVaciar').style.display = 'block';
                 document.getElementById('btnMenuDesorcion').style.display = 'flex';
                 document.getElementById('btnMenuReportes').style.display = 'flex';
             }
-            if (rol === 'GERENCIA') {
+            if (usuarioSesion.rol === 'GERENCIA') {
                 document.getElementById('btnMenuGerencia').style.display = 'flex';
             }
+
+            agregarLoteHTML();
+            cargarCargas();
+            cargarDeclaraciones();
+            cargarCertificados();
         }
 
-        async function cargarDatosParalelos() {
-            try {
-                const [cargasRes, declaRes, certRes] = await Promise.all([
-                    apiFetch('/api/cargas').catch(() => ({ data: [] })),
-                    apiFetch('/api/declaraciones').catch(() => ({ data: [] })),
-                    apiFetch('/api/certificados').catch(() => ({ data: [] }))
-                ]);
-                
-                State.cargas = cargasRes.data || [];
-                State.declaraciones = declaRes.data || [];
-                State.certificados = certRes.data || [];
+        function cerrarSesion() {
+            sessionStorage.removeItem('sesionDesorcion');
+            location.reload();
+        }
 
-                renderTablaDeclaraciones(State.declaraciones);
-                renderTablaCertificados(State.certificados);
-                renderHistorialCargas(State.cargas);
+        window.onload = function() {
+            const sesionStr = sessionStorage.getItem('sesionDesorcion');
+            if (sesionStr) {
+                usuarioSesion = JSON.parse(sesionStr);
+                iniciarApp();
+            }
+        };
+
+        function mostrarSeccion(idSec, btn) {
+            document.querySelectorAll('.seccion-app').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+
+            document.getElementById(idSec).classList.add('active');
+            if(btn) btn.classList.add('active');
+
+            if (idSec === 'secReportes') cargarReportes();
+        }
+
+        function agregarLoteHTML() {
+            contadorLotesGlobal++;
+            const cont = document.getElementById('contenedorLotes');
+            const div = document.createElement('div');
+            div.className = 'lote-item card';
+            div.style.marginTop = '10px';
+            div.id = `lote_${contadorLotesGlobal}`;
+
+            div.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                    <b>Lote #${contadorLotesGlobal}</b>
+                    <button type="button" class="btn-peligro" onclick="this.parentElement.parentElement.remove()">🗑️ Eliminar</button>
+                </div>
+                <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px;">
+                    <div><label>Cod. Lote:</label><input type="text" class="l-codigo" value="LOTE ${contadorLotesGlobal}"></div>
+                    <div><label>N° Sacos:</label><input type="number" class="l-sacos" value="0"></div>
+                    <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" class="l-bruto" value="0"></div>
+                    <div><label>Tara (kg):</label><input type="number" step="0.01" class="l-tara" value="0"></div>
+                    <div><label>Humedad (%):</label><input type="number" step="0.01" class="l-humedad" value="0"></div>
+                </div>
+            `;
+            cont.appendChild(div);
+        }
+
+        async function guardarCarga(e) {
+            e.preventDefault();
+            const lotesElems = document.querySelectorAll('.lote-item');
+            let arrayLotes = [];
+
+            lotesElems.forEach(elem => {
+                arrayLotes.push({
+                    codigo_lote: elem.querySelector('.l-codigo').value,
+                    cantidad_sacos: elem.querySelector('.l-sacos').value,
+                    peso_bruto: elem.querySelector('.l-bruto').value,
+                    tara: elem.querySelector('.l-tara').value,
+                    porcentaje_humedad: elem.querySelector('.l-humedad').value
+                });
+            });
+
+            const bodyData = {
+                codigo_carga: document.getElementById('codigo_carga').value,
+                proveedor: document.getElementById('proveedor').value,
+                ruc_proveedor: document.getElementById('ruc_proveedor').value,
+                numero_chaparra: document.getElementById('numero_chaparra').value,
+                guia_remision: document.getElementById('guia_remision').value,
+                guia_transportista: document.getElementById('guia_transportista').value,
+                fecha_operacion: document.getElementById('fecha_operacion').value,
+                usuario_registro: usuarioSesion.usuario,
+                lotes: arrayLotes
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/api/cargas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bodyData)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Carga guardada con éxito.');
+                    document.getElementById('formCarga').reset();
+                    document.getElementById('contenedorLotes').innerHTML = '<h4>Lotes Pertenecientes a esta Carga</h4>';
+                    contadorLotesGlobal = 0;
+                    agregarLoteHTML();
+                    cargarCargas();
+                }
             } catch (err) {
-                console.error("Error al cargar datos iniciales:", err);
+                alert('Error de conexión.');
             }
         }
 
-        // LOTES FORM
-        function inicializarFormLotes() {
-            State.lotesForm = [];
-            agregarLoteAEstado();
+        async function cargarCargas() {
+            try {
+                const res = await fetch(`${API_URL}/api/cargas`);
+                const data = await res.json();
+                if (data.success) {
+                    listaCargasGlobal = data.data;
+                    renderHistorial(listaCargasGlobal);
+                }
+            } catch (err) {
+                console.error("Error al cargar cargas:", err);
+            }
         }
 
-        function agregarLoteAEstado() {
-            State.lotesForm.push({
-                id: Date.now(),
-                codigo_lote: `LOTE ${State.lotesForm.length + 1}`,
-                cantidad_sacos: 0,
-                peso_bruto: 0,
-                tara: 0,
-                porcentaje_humedad: 0
+        function renderHistorial(lista) {
+            const cont = document.getElementById('contenedorHistorialSimplificado');
+            if (lista.length === 0) {
+                cont.innerHTML = '<p style="color: #718096; font-size: 13px;">No hay registros.</p>';
+                return;
+            }
+
+            let html = '<table><thead><tr><th>Operación</th><th>Proveedor</th><th>Guía</th><th>Estado</th></tr></thead><tbody>';
+            lista.forEach(c => {
+                html += `<tr>
+                    <td><b>${c.codigo_carga}</b></td>
+                    <td>${c.proveedor}</td>
+                    <td>${c.guia_remision || '-'}</td>
+                    <td><span class="badge">${c.estado}</span></td>
+                </tr>`;
             });
-            renderLotesForm();
+            html += '</tbody></table>';
+            cont.innerHTML = html;
         }
 
-        function renderLotesForm() {
-            const container = document.getElementById('contenedorLotes');
-            container.innerHTML = '<h4>Lotes Pertenecientes a esta Carga</h4>';
+        function filtrarHistorial() {
+            const txt = document.getElementById('srcTexto').value.toLowerCase();
+            const fec = document.getElementById('srcFecha').value;
+            const est = document.getElementById('srcEstado').value;
 
-            State.lotesForm.forEach((lote, idx) => {
-                const div = document.createElement('div');
-                div.className = 'lote-item card';
-                div.style.marginTop = '10px';
-                
-                div.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                        <span><b>Lote #${idx + 1}</b></span>
-                        ${State.lotesForm.length > 1 ? `<button type="button" class="btn-peligro" onclick="eliminarLoteForm(${lote.id})">🗑️ Eliminar</button>` : ''}
-                    </div>
-                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
-                        <div><label>Cod. Lote:</label><input type="text" value="${escapeHTML(lote.codigo_lote)}" onchange="actualizarLoteForm(${lote.id}, 'codigo_lote', this.value)"></div>
-                        <div><label>N° Sacos:</label><input type="number" value="${lote.cantidad_sacos}" onchange="actualizarLoteForm(${lote.id}, 'cantidad_sacos', parseInt(this.value) || 0)"></div>
-                        <div><label>Peso Bruto (kg):</label><input type="number" step="0.01" value="${lote.peso_bruto}" onchange="actualizarLoteForm(${lote.id}, 'peso_bruto', parseFloat(this.value) || 0)"></div>
-                        <div><label>Tara (kg):</label><input type="number" step="0.01" value="${lote.tara}" onchange="actualizarLoteForm(${lote.id}, 'tara', parseFloat(this.value) || 0)"></div>
-                        <div><label>Humedad (%):</label><input type="number" step="0.01" value="${lote.porcentaje_humedad}" onchange="actualizarLoteForm(${lote.id}, 'porcentaje_humedad', parseFloat(this.value) || 0)"></div>
-                    </div>
-                `;
-                container.appendChild(div);
+            const res = listaCargasGlobal.filter(c => {
+                const matchTxt = (c.codigo_carga && c.codigo_carga.toLowerCase().includes(txt)) || (c.proveedor && c.proveedor.toLowerCase().includes(txt));
+                const matchFec = !fec || (c.fecha && c.fecha.startsWith(fec));
+                const matchEst = !est || c.estado === est;
+                return matchTxt && matchFec && matchEst;
             });
+
+            renderHistorial(res);
         }
 
-        function actualizarLoteForm(id, campo, valor) {
-            const lote = State.lotesForm.find(l => l.id === id);
-            if (lote) lote[campo] = valor;
-        }
-
-        function eliminarLoteForm(id) {
-            State.lotesForm = State.lotesForm.filter(l => l.id !== id);
-            renderLotesForm();
-        }
-
-        document.getElementById('btnAgregarLote').addEventListener('click', () => agregarLoteAEstado());
-
-        // GUARDAR DECLARACION Y CREAR PDF
-        document.getElementById('formDeclaracionJurada').addEventListener('submit', async (e) => {
+        async function guardarDeclaracionJurada(e) {
             e.preventDefault();
             const payload = {
                 nombre_conductor: document.getElementById('dj_nombre').value,
@@ -487,25 +507,52 @@
                 ruta_usada: document.getElementById('dj_ruta').value,
                 fecha_traslado: document.getElementById('dj_fecha_traslado').value,
                 fecha_documento: document.getElementById('dj_fecha_doc').value,
-                nombre_firma: document.getElementById('dj_firma').value
+                nombre_firma: document.getElementById('dj_firma').value,
+                usuario_registro: usuarioSesion.usuario
             };
 
             try {
-                const res = await apiFetch('/api/declaraciones', {
+                const res = await fetch(`${API_URL}/api/declaraciones`, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                alert('Declaración Jurada guardada.');
-                State.declaraciones.unshift(res.data);
-                renderTablaDeclaraciones(State.declaraciones);
-                generarPdfDeclaracion(res.data);
-                document.getElementById('formDeclaracionJurada').reset();
+                const data = await res.json();
+                if (data.success) {
+                    alert('Declaración Jurada guardada.');
+                    reimprimirDj(data.data);
+                    cargarDeclaraciones();
+                    document.getElementById('formDeclaracionJurada').reset();
+                }
             } catch (err) {
-                alert('Error al guardar: ' + err.message);
+                alert('Error al guardar DJ.');
             }
-        });
+        }
 
-        function generarPdfDeclaracion(dj) {
+        async function cargarDeclaraciones() {
+            try {
+                const res = await fetch(`${API_URL}/api/declaraciones`);
+                const data = await res.json();
+                if (data.success) {
+                    const tbody = document.querySelector('#tablaDeclaracionesHistorial tbody');
+                    tbody.innerHTML = '';
+                    data.data.forEach(dj => {
+                        const djObj = JSON.stringify(dj).replace(/"/g, '&quot;');
+                        tbody.innerHTML += `<tr>
+                            <td>${new Date(dj.created_at).toLocaleDateString()}</td>
+                            <td><b>${dj.nombre_conductor}</b><br><small>DNI: ${dj.dni_conductor}</small></td>
+                            <td><span class="badge">${dj.placa_vehiculo}</span></td>
+                            <td>${dj.guia_remision}</td>
+                            <td><button class="btn-secundario" onclick="reimprimirDj(${djObj})">📄 PDF</button></td>
+                        </tr>`;
+                    });
+                }
+            } catch (err) {
+                console.error("Error declaraciones:", err);
+            }
+        }
+
+        function reimprimirDj(dj) {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
@@ -528,85 +575,93 @@
             doc.save(`DJ_${dj.placa_vehiculo || 'Transporte'}.pdf`);
         }
 
-        function renderTablaDeclaraciones(lista) {
-            const tbody = document.querySelector('#tablaDeclaracionesHistorial tbody');
-            tbody.innerHTML = '';
+        async function guardarCertificado(e) {
+            e.preventDefault();
+            const payload = {
+                nombre_declarante: document.getElementById('cert_declarante').value,
+                dni_declarante: document.getElementById('cert_dni_declarante').value,
+                ruc_declarante: document.getElementById('cert_ruc_declarante').value,
+                domicilio_fiscal: document.getElementById('cert_domicilio').value,
+                condicion_minero: document.getElementById('cert_condicion').value,
+                nombre_concesion: document.getElementById('cert_concesion').value,
+                codigo_concesion: document.getElementById('cert_cod_concesion').value,
+                distrito: document.getElementById('cert_distrito').value,
+                provincia: document.getElementById('cert_provincia').value,
+                departamento: document.getElementById('cert_departamento').value,
+                nombres_firmante: document.getElementById('cert_nom_firmante').value,
+                apellidos_firmante: document.getElementById('cert_ape_firmante').value,
+                dni_firmante: document.getElementById('cert_dni_firmante').value,
+                fecha_emision: document.getElementById('cert_fecha_emision').value,
+                usuario_registro: usuarioSesion.usuario
+            };
 
-            lista.forEach(dj => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${escapeHTML(new Date(dj.created_at || Date.now()).toLocaleDateString())}</td>
-                    <td><b>${escapeHTML(dj.nombre_conductor)}</b><br><small>DNI: ${escapeHTML(dj.dni_conductor)}</small></td>
-                    <td><span class="badge">${escapeHTML(dj.placa_vehiculo)}</span></td>
-                    <td>${escapeHTML(dj.guia_remision)}</td>
-                    <td><button class="btn-secundario btn-pdf">📄 Re-imprimir PDF</button></td>
-                `;
-                tr.querySelector('.btn-pdf').addEventListener('click', () => generarPdfDeclaracion(dj));
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderTablaCertificados(lista) {
-            const tbody = document.querySelector('#tablaCertificadosHistorial tbody');
-            tbody.innerHTML = '';
-
-            lista.forEach(c => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${escapeHTML(c.fecha_emision || '-')}</td>
-                    <td><b>${escapeHTML(c.nombre_declarante)}</b></td>
-                    <td>${escapeHTML(c.nombre_concesion)}</td>
-                    <td>${escapeHTML(c.distrito)} - ${escapeHTML(c.departamento)}</td>
-                    <td><button class="btn-secundario">📄 PDF</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function renderHistorialCargas(lista) {
-            const container = document.getElementById('contenedorHistorialSimplificado');
-            if (!lista || lista.length === 0) {
-                container.innerHTML = '<p style="color: #718096; font-size: 13px;">No hay registros de cargas aún.</p>';
-                return;
+            try {
+                const res = await fetch(`${API_URL}/api/certificados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Certificado de Procedencia guardado.');
+                    cargarCertificados();
+                    document.getElementById('formCertificado').reset();
+                }
+            } catch (err) {
+                alert('Error al guardar Certificado.');
             }
-
-            let html = '<table><thead><tr><th>Operación</th><th>Proveedor</th><th>Guía</th><th>Estado</th></tr></thead><tbody>';
-            lista.forEach(c => {
-                html += `
-                    <tr>
-                        <td><b>${escapeHTML(c.codigo_carga)}</b></td>
-                        <td>${escapeHTML(c.proveedor)}</td>
-                        <td>${escapeHTML(c.guia_remision || '-')}</td>
-                        <td><span class="badge">${escapeHTML(c.estado)}</span></td>
-                    </tr>
-                `;
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
         }
 
-        // NAVEGACIÓN
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const targetSection = this.getAttribute('data-section');
-                document.querySelectorAll('.seccion-app').forEach(s => s.classList.remove('active'));
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        async function cargarCertificados() {
+            try {
+                const res = await fetch(`${API_URL}/api/certificados`);
+                const data = await res.json();
+                if (data.success) {
+                    const tbody = document.querySelector('#tablaCertificadosHistorial tbody');
+                    tbody.innerHTML = '';
+                    data.data.forEach(c => {
+                        tbody.innerHTML += `<tr>
+                            <td>${c.fecha_emision || '-'}</td>
+                            <td><b>${c.nombre_declarante}</b></td>
+                            <td>${c.nombre_concesion}</td>
+                            <td>${c.distrito} - ${c.departamento}</td>
+                            <td><button class="btn-secundario">📄 PDF</button></td>
+                        </tr>`;
+                    });
+                }
+            } catch (err) {
+                console.error("Error certificados:", err);
+            }
+        }
 
-                document.getElementById(targetSection).classList.add('active');
-                this.classList.add('active');
+        async function vaciarBaseDatos() {
+            if (!confirm('¿Está seguro de vaciar la base de datos? Esta acción es irreversible.')) return;
+            try {
+                const res = await fetch(`${API_URL}/api/cargas`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rol_usuario: usuarioSesion.rol })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Base de datos vaciada.');
+                    cargarCargas();
+                    cargarDeclaraciones();
+                    cargarCertificados();
+                }
+            } catch (err) {
+                alert('Error al vaciar BD.');
+            }
+        }
 
-                if (targetSection === 'secReportes') cargarGraficosReportes();
-            });
-        });
-
-        function cargarGraficosReportes() {
+        function cargarReportes() {
             const ctxKg = document.getElementById('chartKgSeco').getContext('2d');
             const ctxValor = document.getElementById('chartValorUsd').getContext('2d');
             
-            if (State.charts.kg) State.charts.kg.destroy();
-            if (State.charts.valor) State.charts.valor.destroy();
+            if (chartKgInstance) chartKgInstance.destroy();
+            if (chartValorInstance) chartValorInstance.destroy();
 
-            State.charts.kg = new Chart(ctxKg, {
+            chartKgInstance = new Chart(ctxKg, {
                 type: 'bar',
                 data: {
                     labels: ['Enero', 'Febrero', 'Marzo'],
@@ -615,7 +670,7 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
 
-            State.charts.valor = new Chart(ctxValor, {
+            chartValorInstance = new Chart(ctxValor, {
                 type: 'line',
                 data: {
                     labels: ['Enero', 'Febrero', 'Marzo'],
@@ -624,8 +679,6 @@
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
-
-        document.getElementById('btnLogout').addEventListener('click', cerrarSesion);
     </script>
 </body>
 </html>
