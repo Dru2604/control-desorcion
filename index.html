@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Control de Desorción - OPESUR</title>
+    <title>Sistema de Control de Desorción</title>
     
     <!-- Librerías Externas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -64,6 +64,8 @@
         .badge { padding: 4px 8px; border-radius: 12px; font-weight: bold; font-size: 11px; background: #feebc8; color: #c05621; }
         
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 15px; }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -126,7 +128,7 @@
             <div class="card">
                 <h3>📦 Registrar Nueva Carga y Lotes</h3>
                 <form id="formCarga" autocomplete="off">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                    <div class="grid-3">
                         <div class="campo"><label>N° de Operación:</label><input type="text" id="codigo_carga" required placeholder="Ej: OPE-170326"></div>
                         <div class="campo"><label>Proveedor / Minero:</label><input type="text" id="proveedor" required placeholder="Ej: WILBER CCOTO"></div>
                         <div class="campo"><label>RUC Proveedor:</label><input type="text" id="ruc_proveedor" placeholder="Ej: 10458796321"></div>
@@ -147,7 +149,7 @@
             </div>
         </section>
 
-        <!-- 2. HISTORIAL -->
+        <!-- 2. HISTORIAL GENERAL -->
         <section id="secHistorial" class="seccion-app">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -170,29 +172,33 @@
             </div>
         </section>
 
-        <!-- 3. DECLARACIÓN JURADA -->
+        <!-- 3. DECLARACIÓN JURADA DEL TRANSPORTISTA (EXACTO A TUS CAPTURAS) -->
         <section id="secDeclaracion" class="seccion-app">
             <div class="card">
                 <h3>📜 Declaración Jurada del Transportista</h3>
                 <form id="formDeclaracionJurada" style="margin-bottom: 25px;">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                    <div class="grid-3">
                         <div class="campo"><label>Nombre del Conductor:</label><input type="text" id="dj_nombre" required></div>
                         <div class="campo"><label>DNI Conductor:</label><input type="text" id="dj_dni" required></div>
                         <div class="campo"><label>Licencia Conductor:</label><input type="text" id="dj_licencia"></div>
+
                         <div class="campo"><label>Placa Vehículo:</label><input type="text" id="dj_placa" required></div>
                         <div class="campo"><label>Propietario Vehículo:</label><input type="text" id="dj_propietario"></div>
                         <div class="campo"><label>Guía de Remisión:</label><input type="text" id="dj_guia" required></div>
+
                         <div class="campo"><label>RUC Empresa Transportista:</label><input type="text" id="dj_ruc_empresa"></div>
                         <div class="campo"><label>Calidad / Empresa:</label><input type="text" id="dj_calidad"></div>
                         <div class="campo"><label>Proveedor / Emisor:</label><input type="text" id="dj_proveedor"></div>
+
                         <div class="campo"><label>Punto Partida:</label><input type="text" id="dj_partida"></div>
                         <div class="campo"><label>Punto Llegada:</label><input type="text" id="dj_llegada"></div>
                         <div class="campo"><label>Ruta Usada:</label><input type="text" id="dj_ruta"></div>
+
                         <div class="campo"><label>Fecha Traslado:</label><input type="date" id="dj_fecha_traslado"></div>
                         <div class="campo"><label>Fecha Documento:</label><input type="date" id="dj_fecha_doc"></div>
                         <div class="campo"><label>Nombre Firma:</label><input type="text" id="dj_firma"></div>
                     </div>
-                    <button type="submit" id="btnGuardarDj" class="btn-exito" style="margin-top: 10px;">💾 Guardar y Descargar DJ (PDF)</button>
+                    <button type="submit" id="btnGuardarDj" class="btn-exito" style="margin-top: 15px;">💾 Guardar y Descargar DJ (PDF)</button>
                 </form>
 
                 <table id="tablaDeclaracionesHistorial">
@@ -210,28 +216,32 @@
             </div>
         </section>
 
-        <!-- 4. CERTIFICADO PROCEDENCIA -->
+        <!-- 4. CERTIFICADO DE PROCEDENCIA (EXACTO A TUS CAPTURAS) -->
         <section id="secCertificado" class="seccion-app">
             <div class="card">
                 <h3>📄 Certificado de Procedencia de Mineral</h3>
                 <form id="formCertificado" style="margin-bottom: 25px;">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 15px;">
+                    <div class="grid-3">
                         <div class="campo"><label>Nombre Declarante:</label><input type="text" id="cert_declarante" required></div>
                         <div class="campo"><label>DNI Declarante:</label><input type="text" id="cert_dni_declarante" required></div>
                         <div class="campo"><label>RUC Declarante:</label><input type="text" id="cert_ruc_declarante"></div>
+
                         <div class="campo"><label>Domicilio Fiscal:</label><input type="text" id="cert_domicilio"></div>
                         <div class="campo"><label>Condición Minero:</label><input type="text" id="cert_condicion"></div>
                         <div class="campo"><label>Nombre Concesión:</label><input type="text" id="cert_concesion"></div>
+
                         <div class="campo"><label>Código Concesión:</label><input type="text" id="cert_cod_concesion"></div>
                         <div class="campo"><label>Distrito:</label><input type="text" id="cert_distrito"></div>
                         <div class="campo"><label>Provincia:</label><input type="text" id="cert_provincia"></div>
+
                         <div class="campo"><label>Departamento:</label><input type="text" id="cert_departamento"></div>
                         <div class="campo"><label>Nombres Firmante:</label><input type="text" id="cert_nom_firmante"></div>
                         <div class="campo"><label>Apellidos Firmante:</label><input type="text" id="cert_ape_firmante"></div>
+
                         <div class="campo"><label>DNI Firmante:</label><input type="text" id="cert_dni_firmante"></div>
                         <div class="campo"><label>Fecha Emisión:</label><input type="date" id="cert_fecha_emision"></div>
                     </div>
-                    <button type="submit" class="btn-exito" style="margin-top: 10px;">💾 Guardar y Emitir Certificado</button>
+                    <button type="submit" class="btn-exito" style="margin-top: 15px;">💾 Guardar y Emitir Certificado</button>
                 </form>
 
                 <table id="tablaCertificadosHistorial">
@@ -249,7 +259,7 @@
             </div>
         </section>
 
-        <!-- 5. DESORCIÓN -->
+        <!-- 5. CARBÓN DESORBIDO (EXACTO A TUS CAPTURAS) -->
         <section id="secDesorcion" class="seccion-app">
             <div class="card">
                 <h3>🔄 Control de Carbón Desorbido</h3>
@@ -279,7 +289,7 @@
 
     </main>
 
-    <!-- JS COMPLETO CON GENERACIÓN DE PDFS -->
+    <!-- LOGICA JAVASCRIPT -->
     <script>
         const CONFIG = {
             API_URL: 'https://backend-desorcion.onrender.com',
