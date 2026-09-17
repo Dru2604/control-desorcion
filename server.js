@@ -1,88 +1,156 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
 
 const app = express();
 const port = process.env.PORT || 3001;
+const JWT_SECRET = process.env.JWT_SECRET || 'llave_secreta_super_segura_planta_2026';
 
-app.use(cors());
+// Middlewares de Seguridad y Parsing
+app.use(helmet());
+app.use(cors({ origin: process.env.CLIENT_ORIGIN || '*' }));
 app.use(express.json());
 
+// Configuración de la base de datos PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : { rejectUnauthorized: false }
 });
 
-// Middleware de verificación para Gerencia
-function verificarGerencia(req, res, next) {
-  const rol = req.headers['x-rol-usuario'] || req.body.rol_usuario;
-  if (rol !== 'GERENCIA') {
-    return res.status(403).json({ success: false, error: 'Acceso denegado. Exclusivo para Gerencia.' });
+pool.on('error', (err) => {
+  console.error('Error inesperado en cliente inactivo de PostgreSQL:', err);
+});
+
+// MIDDLEWARES DE AUTENTICACIÓN Y AUTORIZACIÓN
+
+function autenticarToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ success: false, error: 'Acceso denegado. Token no proporcionado.' });
   }
-  next();
+
+  jwt.verify(token, JWT_SECRET, (err, usuario) => {
+    if (err) return res.status(403).json({ success: false, error: 'Token inválido o expirado.' });
+    req.usuario = usuario;
+    next();
+  });
 }
+
+function requerirRol(...rolesPermitidos) {
+  return (req, res, next) => {
+    if (!rolesPermitidos.includes(req.usuario.rol)) {
+      return res.status(403).json({ success: false, error: 'No posee los permisos requeridos para esta acción.' });
+    }
+    next();
+  };
+}
+
+// ENDPOINTS API
 
 // 1. AUTENTICACIÓN
 app.post('/api/login', async (req, res) => {
   const { usuario, password } = req.body;
+  if (!usuario || !password) {
+    return res.status(400).json({ success: false, error: 'Usuario y contraseña requeridos.' });
+  }
+
   try {
-    const result = await pool.query('SELECT usuario, nombre, rol FROM usuarios WHERE usuario = $1 AND password = $2', [usuario, password]);
-    if (result.rows.length > 0) {
-      res.json({ success: true, usuario: result.rows[0] });
-    } else {
-      res.status(401).json({ success: false, error: 'Usuario o contraseña incorrectos.' });
+    const result = await pool.query('SELECT id, usuario, nombre, rol, password FROM usuarios WHERE usuario = $1', [usuario]);
+    if (result.rows.length === 0) {
+      return res.status(401).json({ success: false, error: 'Credenciales inválidas.' });
     }
+
+    const user = result.rows[0];
+    const passwordValido = await bcrypt.compare(password, user.password);
+
+    if (!passwordValido) {
+      return res.status(401).json({ success: false, error: 'Credenciales inválidas.' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, usuario: user.usuario, nombre: user.nombre, rol: user.rol },
+      JWT_SECRET,
+      { expiresIn: '8h' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      usuario: { id: user.id, usuario: user.usuario, nombre: user.nombre, rol: user.rol }
+    });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Error en el servidor.' });
+    console.error('Error en Login:', err);
+    res.status(500).json({ success: false, error: 'Error interno del servidor.' });
   }
 });
 
-// 2. OBTENER CARGAS E HISTORIAL
-app.get('/api/cargas', async (req, res) => {
+// 2. OBTENER CARGAS E HISTORIAL (Consulta optimizada)
+app.get('/api/cargas', autenticarToken, async (req, res) => {
   try {
-    const cargasResult = await pool.query('SELECT * FROM cargas ORDER BY fecha DESC');
-    const cargas = cargasResult.rows;
+    const query = `
+      SELECT 
+        c.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', l.id,
+              'codigo_lote', l.codigo_lote,
+              'cantidad_sacos', l.cantidad_sacos,
+              'peso_bruto', l.peso_bruto,
+              'tara', l.tara,
+              'peso_seco_neto', l.peso_seco_neto,
+              'ley_au_g_kg', l.ley_au_g_kg,
+              'ley_ag_g_kg', l.ley_ag_g_kg,
+              'ubicacion_fisica', l.ubicacion_fisica,
+              'descripcion_acta', CONCAT('CARBON ACTIVADO – ', COALESCE(l.cantidad_sacos::text || ' SACOS', 'NUMERO DE SACOS'))
+            ) ORDER BY l.id ASC
+          ) FILTER (WHERE l.id IS NOT NULL), '[]'
+        ) AS lotes
+      FROM cargas c
+      LEFT JOIN lotes l ON c.id = l.carga_id
+      GROUP BY c.id
+      ORDER BY c.fecha DESC;
+    `;
 
-    for (let carga of cargas) {
-      const lotesResult = await pool.query('SELECT * FROM lotes WHERE carga_id = $1 ORDER BY id ASC', [carga.id]);
-      
-      carga.lotes = lotesResult.rows.map(lote => {
-        const cantSacos = lote.cantidad_sacos ? `${lote.cantidad_sacos} SACOS` : 'NUMERO DE SACOS';
-        return {
-          ...lote,
-          descripcion_acta: `CARBON ACTIVADO – ${cantSacos}`
-        };
-      });
-    }
-
-    res.json({ success: true, data: cargas });
+    const { rows } = await pool.query(query);
+    res.json({ success: true, data: rows });
   } catch (err) {
-    res.status(500).json({ success: false, error: 'Error al consultar cargas.' });
+    console.error('Error al consultar cargas:', err);
+    res.status(500).json({ success: false, error: 'Error al consultar el historial de cargas.' });
   }
 });
 
 // 3. REGISTRAR NUEVA CARGA Y LOTES
-app.post('/api/cargas', async (req, res) => {
+app.post('/api/cargas', autenticarToken, async (req, res) => {
   const { 
     codigo_carga, proveedor, ruc_proveedor, numero_chaparra, guia_remision, guia_transportista, 
-    usuario_registro, fecha_operacion, lotes 
+    fecha_operacion, lotes 
   } = req.body;
-  
+
+  if (!lotes || !Array.isArray(lotes) || lotes.length === 0) {
+    return res.status(400).json({ success: false, error: 'Debe incluir al menos un lote.' });
+  }
+
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
-    
+
     const resCarga = fecha_operacion 
       ? await client.query(
           `INSERT INTO cargas (codigo_carga, proveedor, ruc_proveedor, numero_chaparra, guia_remision, guia_transportista, usuario_registro, estado, fecha) 
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`, 
-          [codigo_carga, proveedor, ruc_proveedor || '', numero_chaparra || '', guia_remision || '', guia_transportista || '', usuario_registro, 'Por Liquidar', fecha_operacion]
+          [codigo_carga, proveedor, ruc_proveedor || '', numero_chaparra || '', guia_remision || '', guia_transportista || '', req.usuario.usuario, 'Por Liquidar', fecha_operacion]
         )
       : await client.query(
           `INSERT INTO cargas (codigo_carga, proveedor, ruc_proveedor, numero_chaparra, guia_remision, guia_transportista, usuario_registro, estado) 
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`, 
-          [codigo_carga, proveedor, ruc_proveedor || '', numero_chaparra || '', guia_remision || '', guia_transportista || '', usuario_registro, 'Por Liquidar']
+          [codigo_carga, proveedor, ruc_proveedor || '', numero_chaparra || '', guia_remision || '', guia_transportista || '', req.usuario.usuario, 'Por Liquidar']
         );
 
     const cargaId = resCarga.rows[0].id;
@@ -118,14 +186,15 @@ app.post('/api/cargas', async (req, res) => {
     res.json({ success: true });
   } catch (err) {
     await client.query('ROLLBACK');
-    res.status(500).json({ success: false, error: 'Error al guardar la carga.' });
-  } finally { 
-    client.release(); 
+    console.error('Error al guardar carga:', err);
+    res.status(500).json({ success: false, error: 'Error interno al procesar la carga.' });
+  } finally {
+    client.release();
   }
 });
 
-// 4. DECLARACIONES JURADAS DE TRANSPORTISTAS (GUARDAR Y LISTAR)
-app.get('/api/declaraciones', async (req, res) => {
+// 4. DECLARACIONES JURADAS
+app.get('/api/declaraciones', autenticarToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM declaraciones_juradas ORDER BY created_at DESC');
     res.json({ success: true, data: result.rows });
@@ -134,11 +203,11 @@ app.get('/api/declaraciones', async (req, res) => {
   }
 });
 
-app.post('/api/declaraciones', async (req, res) => {
+app.post('/api/declaraciones', autenticarToken, async (req, res) => {
   const {
     nombre_conductor, dni_conductor, licencia_conductor, calidad_empresa, ruc_empresa,
     proveedor_emisor, fecha_traslado, guia_remision, ruta_usada, punto_partida,
-    punto_llegada, placa_vehiculo, propietario_vehiculo, fecha_documento, nombre_firma, usuario_registro
+    punto_llegada, placa_vehiculo, propietario_vehiculo, fecha_documento, nombre_firma
   } = req.body;
 
   try {
@@ -149,19 +218,19 @@ app.post('/api/declaraciones', async (req, res) => {
       [
         nombre_conductor, dni_conductor, licencia_conductor, calidad_empresa, ruc_empresa,
         proveedor_emisor, fecha_traslado, guia_remision, ruta_usada, punto_partida,
-        punto_llegada, placa_vehiculo, propietario_vehiculo, fecha_documento, nombre_firma, usuario_registro
+        punto_llegada, placa_vehiculo, propietario_vehiculo, fecha_documento, nombre_firma, req.usuario.usuario
       ]
     );
 
     res.json({ success: true, data: result.rows[0] });
   } catch (err) {
-    console.error('Error guardar DJ:', err);
+    console.error('Error al guardar DJ:', err);
     res.status(500).json({ success: false, error: 'Error al guardar la Declaración Jurada.' });
   }
 });
 
-// 5. CERTIFICADOS DE PROCEDENCIA DEL MINERAL (GUARDAR Y LISTAR)
-app.get('/api/certificados', async (req, res) => {
+// 5. CERTIFICADOS DE PROCEDENCIA
+app.get('/api/certificados', autenticarToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM certificados_procedencia ORDER BY created_at DESC');
     res.json({ success: true, data: result.rows });
@@ -170,11 +239,11 @@ app.get('/api/certificados', async (req, res) => {
   }
 });
 
-app.post('/api/certificados', async (req, res) => {
+app.post('/api/certificados', autenticarToken, async (req, res) => {
   const {
     nombre_declarante, dni_declarante, ruc_declarante, domicilio_fiscal, condicion_minero,
     nombre_concesion, codigo_concesion, distrito, provincia, departamento,
-    nombres_firmante, apellidos_firmante, dni_firmante, fecha_emision, usuario_registro
+    nombres_firmante, apellidos_firmante, dni_firmante, fecha_emision
   } = req.body;
 
   try {
@@ -187,7 +256,7 @@ app.post('/api/certificados', async (req, res) => {
       [
         nombre_declarante, dni_declarante, ruc_declarante, domicilio_fiscal, condicion_minero,
         nombre_concesion, codigo_concesion, distrito, provincia, departamento,
-        nombres_firmante, apellidos_firmante, dni_firmante, fecha_emision, usuario_registro
+        nombres_firmante, apellidos_firmante, dni_firmante, fecha_emision, req.usuario.usuario
       ]
     );
 
@@ -199,50 +268,38 @@ app.post('/api/certificados', async (req, res) => {
 });
 
 // 6. CAMBIAR ESTADO DE CARGA
-app.patch('/api/cargas/:id/estado', async (req, res) => {
+app.patch('/api/cargas/:id/estado', autenticarToken, requerirRol('ADMIN', 'SUPERVISOR', 'GERENCIA'), async (req, res) => {
   const { id } = req.params;
-  const { estado, rol_usuario } = req.body;
-  if (rol_usuario !== 'ADMIN' && rol_usuario !== 'SUPERVISOR' && rol_usuario !== 'GERENCIA') {
-    return res.status(403).json({ success: false, error: 'Sin permisos.' });
-  }
+  const { estado } = req.body;
+
   try {
     await pool.query('UPDATE cargas SET estado = $1 WHERE id = $2', [estado, id]);
     res.json({ success: true });
   } catch (err) { 
-    res.status(500).json({ success: false, error: 'Error al actualizar.' }); 
+    res.status(500).json({ success: false, error: 'Error al actualizar el estado.' }); 
   }
 });
 
 // 7. VACIAR BASE DE DATOS
-app.delete('/api/cargas', async (req, res) => {
-  const { rol_usuario } = req.body;
-  if (rol_usuario !== 'ADMIN' && rol_usuario !== 'GERENCIA') {
-    return res.status(403).json({ success: false, error: 'Acceso denegado. Solo administradores o gerencia pueden vaciar el historial.' });
-  }
-
+app.delete('/api/cargas', autenticarToken, requerirRol('ADMIN', 'GERENCIA'), async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    await client.query('TRUNCATE TABLE inventario_carbon_desorbido RESTART IDENTITY CASCADE');
-    await client.query('TRUNCATE TABLE lotes RESTART IDENTITY CASCADE');
-    await client.query('TRUNCATE TABLE cargas RESTART IDENTITY CASCADE');
-    await client.query('TRUNCATE TABLE declaraciones_juradas RESTART IDENTITY CASCADE');
-    await client.query('TRUNCATE TABLE certificados_procedencia RESTART IDENTITY CASCADE');
+    await client.query('TRUNCATE TABLE inventario_carbon_desorbido, lotes, cargas, declaraciones_juradas, certificados_procedencia RESTART IDENTITY CASCADE');
     await client.query('COMMIT');
 
-    res.json({ success: true, message: 'Historial vaciado completamente.' });
+    res.json({ success: true, message: 'Historial completado y limpiado exitosamente.' });
   } catch (err) {
     await client.query('ROLLBACK');
-    res.status(500).json({ success: false, error: 'Error al vaciar la base de datos.' });
+    console.error('Error al vaciar BD:', err);
+    res.status(500).json({ success: false, error: 'Error al reiniciar la base de datos.' });
   } finally {
     client.release();
   }
 });
 
 // 8. REPORTES MENSUALES
-app.get('/api/reportes/mensual', async (req, res) => {
-  const rol = req.headers['x-rol-usuario'];
-  if (rol !== 'ADMIN' && rol !== 'GERENCIA') return res.status(403).json({ success: false, error: 'Acceso denegado.' });
+app.get('/api/reportes/mensual', autenticarToken, requerirRol('ADMIN', 'GERENCIA'), async (req, res) => {
   try {
     const query = `
       SELECT 
@@ -266,7 +323,7 @@ app.get('/api/reportes/mensual', async (req, res) => {
 });
 
 // 9. CONSULTAR MOVIMIENTOS Y PENDIENTES
-app.get('/api/carbon-desorbido', async (req, res) => {
+app.get('/api/carbon-desorbido', autenticarToken, async (req, res) => {
   try {
     const movimientosResult = await pool.query('SELECT * FROM inventario_carbon_desorbido ORDER BY fecha DESC');
     const pendientesResult = await pool.query(`
@@ -282,15 +339,15 @@ app.get('/api/carbon-desorbido', async (req, res) => {
 });
 
 // 10. REGISTRAR MOVIMIENTO DE CARBÓN DESORBIDO
-app.post('/api/carbon-desorbido', async (req, res) => {
-  const { tipo_movimiento, proveedor, codigo_lote, peso_seco_kg, observaciones, usuario_registro, lote_id } = req.body;
+app.post('/api/carbon-desorbido', autenticarToken, async (req, res) => {
+  const { tipo_movimiento, proveedor, codigo_lote, peso_seco_kg, observaciones, lote_id } = req.body;
   const client = await pool.connect();
 
   try {
     await client.query('BEGIN');
     await client.query(
       `INSERT INTO inventario_carbon_desorbido (tipo_movimiento, proveedor, codigo_lote, peso_seco_kg, observaciones, usuario_registro) VALUES ($1, $2, $3, $4, $5, $6)`,
-      [tipo_movimiento, proveedor, codigo_lote, Number(peso_seco_kg) || 0, observaciones || '', usuario_registro]
+      [tipo_movimiento, proveedor, codigo_lote, Number(peso_seco_kg) || 0, observaciones || '', req.usuario.usuario]
     );
 
     if (tipo_movimiento === 'DEVOLUCION_CLIENTE' && lote_id) {
@@ -308,7 +365,7 @@ app.post('/api/carbon-desorbido', async (req, res) => {
 });
 
 // 11. CONTROL MAESTRO GERENCIA
-app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => {
+app.get('/api/gerencia/control-maestro', autenticarToken, requerirRol('GERENCIA'), async (req, res) => {
   try {
     const paramsRes = await pool.query('SELECT * FROM parametros_gerencia ORDER BY id DESC LIMIT 1');
     const params = paramsRes.rows[0] || { precio_inter_au_usd: 4600, precio_inter_ag_usd: 68, factor_oz_g: 31.1035 };
@@ -320,17 +377,23 @@ app.get('/api/gerencia/control-maestro', verificarGerencia, async (req, res) => 
     const query = `
       SELECT 
         c.proveedor, l.codigo_lote, c.estado AS estatus, l.ubicacion_fisica, l.peso_bruto, l.porcentaje_humedad, l.peso_seco_neto, l.ley_au_g_kg, l.ley_ag_g_kg,
-        (l.peso_seco_neto * l.ley_au_g_kg) AS finos_au_g, (l.peso_seco_neto * l.ley_ag_g_kg) AS finos_ag_g,
-        ((l.peso_seco_neto * l.ley_au_g_kg) / $1) AS au_oz, ((l.peso_seco_neto * l.ley_ag_g_kg) / $1) AS ag_oz,
-        (((l.peso_seco_neto * l.ley_au_g_kg) / $1) * $2) AS valor_au_usd, (((l.peso_seco_neto * l.ley_ag_g_kg) / $1) * $3) AS valor_ag_usd,
+        (l.peso_seco_neto * l.ley_au_g_kg) AS finos_au_g, 
+        (l.peso_seco_neto * l.ley_ag_g_kg) AS finos_ag_g,
+        ((l.peso_seco_neto * l.ley_au_g_kg) / $1) AS au_oz, 
+        ((l.peso_seco_neto * l.ley_ag_g_kg) / $1) AS ag_oz,
+        (((l.peso_seco_neto * l.ley_au_g_kg) / $1) * $2) AS valor_au_usd, 
+        (((l.peso_seco_neto * l.ley_ag_g_kg) / $1) * $3) AS valor_ag_usd,
         ((((l.peso_seco_neto * l.ley_au_g_kg) / $1) * $2) + (((l.peso_seco_neto * l.ley_ag_g_kg) / $1) * $3)) AS valor_total_usd
-      FROM cargas c JOIN lotes l ON c.id = l.carga_id ORDER BY c.fecha DESC, c.proveedor ASC, l.codigo_lote ASC;
+      FROM cargas c 
+      JOIN lotes l ON c.id = l.carga_id 
+      ORDER BY c.fecha DESC, c.proveedor ASC, l.codigo_lote ASC;
     `;
     const { rows } = await pool.query(query, [factor, precioAu, precioAg]);
     res.json({ success: true, parametros: params, data: rows });
   } catch (err) { 
+    console.error('Error en control maestro:', err);
     res.status(500).json({ success: false, error: 'Error al generar reporte maestro.' }); 
   }
 });
 
-app.listen(port, () => console.log(`Servidor ejecutándose en el puerto ${port}`));
+app.listen(port, () => console.log(`Servidor de produccion escuchando en puerto ${port}`));
